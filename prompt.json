@@ -6,6 +6,7 @@
       "description": "bedroom layout",
       "shape": "rectangular",
       "dimensions": [3.2, 3.1, 2.2],
+      "style": "japanese",
       "items": [
         "door",
         "bookcase",
