@@ -1,0 +1,26 @@
+{
+  "prompt": {
+    "room": {
+      "id": "bedroom_002",
+      "name": "bedroom",
+      "description": "bedroom layout",
+      "shape": "rectangular",
+      "dimensions": [3.2, 3.1, 2.2],
+      "items": [
+        "door",
+        "bookcase",
+        "wardrobe",
+        "bed",
+        ["window", "plants"],
+        ["desk", "chair"],
+        "bedside"        
+      ],
+      "metadata": {
+        "light": "natural"
+      }
+    },
+    "role": "image generator",
+    "task": "please generate a realistic panoramic 3d image of bedroom_002"
+  }
+}
+

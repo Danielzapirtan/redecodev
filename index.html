@@ -1,1 +1,727 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dormitor 3D - Vizualizare Interactivă</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+        
+        .room-details {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .detail-card {
+            background-color: #e8f4fc;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .viewer-container {
+            flex: 1;
+            min-width: 300px;
+            min-height: 600px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            background-color: #000;
+        }
+        
+        #room3d {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .controls-panel {
+            flex: 0 0 300px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            height: fit-content;
+        }
+        
+        .controls-title {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            font-size: 1.5rem;
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        .item-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+        }
+        
+        .item-btn {
+            padding: 10px 15px;
+            background-color: #ecf0f1;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .item-btn:hover {
+            background-color: #3498db;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .item-btn.active {
+            background-color: #2980b9;
+            color: white;
+        }
+        
+        .slider-container {
+            padding: 10px 0;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+        }
+        
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 1100px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .controls-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dormitor - Vizualizare 3D Interactivă</h1>
+            <p class="subtitle">O reprezentare realistă a camerei cu dimensiunile 320x310x220 cm</p>
+            <div class="room-details">
+                <div class="detail-card">Dimensiuni: 320cm x 310cm x 220cm</div>
+                <div class="detail-card">Formă: Paralelipiped</div>
+                <div class="detail-card">Lumină: Naturală</div>
+                <div class="detail-card">Ieșire: Ușă spre coridor</div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="viewer-container">
+                <canvas id="room3d"></canvas>
+            </div>
+            
+            <div class="controls-panel">
+                <h2 class="controls-title">Control Cameră</h2>
+                
+                <div class="control-group">
+                    <label class="control-label">Mișcă camera:</label>
+                    <div class="slider-container">
+                        <p style="margin-bottom: 10px;">Folosește mouse-ul pentru a roti, zoom și pan</p>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Lumină:</label>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="70" class="slider" id="lightSlider">
+                        <p id="lightValue" style="text-align: center; margin-top: 5px;">70%</p>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Obiecte din cameră:</label>
+                    <div class="item-list" id="itemList">
+                        <!-- Items will be added by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Vizualizare:</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button id="viewTop" class="item-btn">Vedere de sus</button>
+                        <button id="viewDefault" class="item-btn">Vedere normală</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>Cum interacționezi cu camera 3D:</h3>
+            <ul>
+                <li><strong>Rotire:</strong> Apasă și trage cu butonul stâng al mouse-ului</li>
+                <li><strong>Zoom:</strong> Folosește rotița mouse-ului sau glisează cu două degete pe trackpad</li>
+                <li><strong>Pan:</strong> Apasă și trage cu butonul din dreapta al mouse-ului sau cu butonul din mijloc</li>
+                <li><strong>Selectare obiect:</strong> Apasă pe orice obiect din cameră pentru a-i vedea denumirea</li>
+                <li><strong>Schimbare lumină:</strong> Folosește slider-ul pentru a ajusta intensitatea luminii</li>
+            </ul>
+        </div>
+        
+        <footer>
+            <p>Design 3D interactiv pentru dormitor | Dimensiuni reale: 3.2m x 3.1m x 2.2m</p>
+            <p>Realizat cu Three.js și WebGL</p>
+        </footer>
+    </div>
 
+    <script>
+        // Room dimensions in meters (converted from cm)
+        const ROOM_LENGTH = 3.2;
+        const ROOM_WIDTH = 3.1;
+        const ROOM_HEIGHT = 2.2;
+        
+        // Room items with positions and colors
+        const roomItems = [
+            { name: "ușă", position: "sw", color: 0x8B4513, size: [0.9, 2.0, 0.05] },
+            { name: "noptieră", position: "s", color: 0xD2B48C, size: [0.5, 0.5, 0.4] },
+            { name: "birou", position: "se", color: 0x8B7355, size: [1.2, 0.6, 0.75] },
+            { name: "scaun", position: "se", color: 0x2E8B57, size: [0.5, 0.5, 0.8] },
+            { name: "fereastră", position: "e", color: 0x87CEEB, size: [1.5, 1.2, 0.05] },
+            { name: "plante", position: "e", color: 0x228B22, size: [0.3, 0.3, 0.6] },
+            { name: "bibliotecă", position: "nw", color: 0xA0522D, size: [1.0, 0.3, 1.8] },
+            { name: "șifonier", position: "n", color: 0x696969, size: [1.2, 0.6, 1.8] },
+            { name: "pat", position: "ne", color: 0x4169E1, size: [1.6, 2.0, 0.5] }
+        ];
+        
+        // Map position codes to coordinates
+        const positionMap = {
+            "sw": { x: -ROOM_WIDTH/2 + 0.5, z: -ROOM_LENGTH/2 + 0.5 },
+            "s": { x: 0, z: -ROOM_LENGTH/2 + 0.5 },
+            "se": { x: ROOM_WIDTH/2 - 0.8, z: -ROOM_LENGTH/2 + 0.8 },
+            "e": { x: ROOM_WIDTH/2 - 0.1, z: 0 },
+            "ne": { x: ROOM_WIDTH/2 - 1.0, z: ROOM_LENGTH/2 - 1.0 },
+            "n": { x: 0, z: ROOM_LENGTH/2 - 0.5 },
+            "nw": { x: -ROOM_WIDTH/2 + 0.5, z: ROOM_LENGTH/2 - 0.3 }
+        };
+        
+        // Three.js variables
+        let scene, camera, renderer, controls;
+        let roomWalls = [];
+        let roomObjects = [];
+        let selectedObject = null;
+        let ambientLight, directionalLight;
+        
+        // Initialize the 3D scene
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+            camera.position.set(4, 3, 4);
+            
+            // Create renderer
+            const canvas = document.getElementById('room3d');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Add orbit controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 2;
+            controls.maxDistance = 10;
+            controls.maxPolarAngle = Math.PI / 2;
+            
+            // Add lighting
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(5, 10, 7);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.left = -10;
+            directionalLight.shadow.camera.right = 10;
+            directionalLight.shadow.camera.top = 10;
+            directionalLight.shadow.camera.bottom = -10;
+            scene.add(directionalLight);
+            
+            // Add room
+            createRoom();
+            
+            // Add room items
+            createRoomItems();
+            
+            // Add floor
+            createFloor();
+            
+            // Add ceiling
+            createCeiling();
+            
+            // Handle window resizing
+            window.addEventListener('resize', onWindowResize);
+            
+            // Setup item selection
+            setupItemSelection();
+            
+            // Setup controls
+            setupControls();
+            
+            // Create item buttons
+            createItemButtons();
+            
+            // Start animation loop
+            animate();
+        }
+        
+        function createRoom() {
+            // Room material
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xF5F5DC, 
+                side: THREE.BackSide 
+            });
+            
+            // Create walls
+            const wallThickness = 0.1;
+            
+            // Back wall (north)
+            const backWall = new THREE.Mesh(
+                new THREE.BoxGeometry(ROOM_WIDTH, ROOM_HEIGHT, wallThickness),
+                wallMaterial
+            );
+            backWall.position.set(0, ROOM_HEIGHT/2, -ROOM_LENGTH/2);
+            scene.add(backWall);
+            roomWalls.push(backWall);
+            
+            // Front wall (south) with door opening
+            const frontWall = new THREE.Group();
+            
+            // Left part of front wall
+            const frontWallLeft = new THREE.Mesh(
+                new THREE.BoxGeometry(ROOM_WIDTH/2 - 0.5, ROOM_HEIGHT, wallThickness),
+                wallMaterial
+            );
+            frontWallLeft.position.set(-ROOM_WIDTH/4 - 0.25, ROOM_HEIGHT/2, ROOM_LENGTH/2);
+            frontWall.add(frontWallLeft);
+            
+            // Right part of front wall
+            const frontWallRight = new THREE.Mesh(
+                new THREE.BoxGeometry(ROOM_WIDTH/2 - 0.5, ROOM_HEIGHT, wallThickness),
+                wallMaterial
+            );
+            frontWallRight.position.set(ROOM_WIDTH/4 + 0.25, ROOM_HEIGHT/2, ROOM_LENGTH/2);
+            frontWall.add(frontWallRight);
+            
+            // Top part of front wall (above door)
+            const frontWallTop = new THREE.Mesh(
+                new THREE.BoxGeometry(1.0, ROOM_HEIGHT - 2.0, wallThickness),
+                wallMaterial
+            );
+            frontWallTop.position.set(0, ROOM_HEIGHT - (ROOM_HEIGHT - 2.0)/2, ROOM_LENGTH/2);
+            frontWall.add(frontWallTop);
+            
+            scene.add(frontWall);
+            roomWalls.push(frontWall);
+            
+            // Left wall (west)
+            const leftWall = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, ROOM_HEIGHT, ROOM_LENGTH),
+                wallMaterial
+            );
+            leftWall.position.set(-ROOM_WIDTH/2, ROOM_HEIGHT/2, 0);
+            scene.add(leftWall);
+            roomWalls.push(leftWall);
+            
+            // Right wall (east) with window
+            const rightWall = new THREE.Group();
+            
+            // Bottom part of right wall
+            const rightWallBottom = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, 0.5, ROOM_LENGTH),
+                wallMaterial
+            );
+            rightWallBottom.position.set(ROOM_WIDTH/2, 0.25, 0);
+            rightWall.add(rightWallBottom);
+            
+            // Top part of right wall
+            const rightWallTop = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, ROOM_HEIGHT - 1.7, ROOM_LENGTH),
+                wallMaterial
+            );
+            rightWallTop.position.set(ROOM_WIDTH/2, ROOM_HEIGHT - (ROOM_HEIGHT - 1.7)/2, 0);
+            rightWall.add(rightWallTop);
+            
+            // Left part of right wall (left of window)
+            const rightWallLeft = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, 1.2, ROOM_LENGTH/2 - 0.75),
+                wallMaterial
+            );
+            rightWallLeft.position.set(ROOM_WIDTH/2, 1.1, -ROOM_LENGTH/4 - 0.375);
+            rightWall.add(rightWallLeft);
+            
+            // Right part of right wall (right of window)
+            const rightWallRight = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, 1.2, ROOM_LENGTH/2 - 0.75),
+                wallMaterial
+            );
+            rightWallRight.position.set(ROOM_WIDTH/2, 1.1, ROOM_LENGTH/4 + 0.375);
+            rightWall.add(rightWallRight);
+            
+            scene.add(rightWall);
+            roomWalls.push(rightWall);
+        }
+        
+        function createFloor() {
+            const floorGeometry = new THREE.PlaneGeometry(ROOM_WIDTH, ROOM_LENGTH);
+            const floorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x8B7355,
+                roughness: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+        }
+        
+        function createCeiling() {
+            const ceilingGeometry = new THREE.PlaneGeometry(ROOM_WIDTH, ROOM_LENGTH);
+            const ceilingMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xF5F5F5,
+                roughness: 0.9
+            });
+            const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.y = ROOM_HEIGHT;
+            scene.add(ceiling);
+        }
+        
+        function createRoomItems() {
+            roomItems.forEach(item => {
+                let geometry, mesh;
+                
+                if (item.name === "fereastră") {
+                    // Window is a plane with blue color
+                    geometry = new THREE.BoxGeometry(...item.size);
+                    const windowMaterial = new THREE.MeshStandardMaterial({ 
+                        color: item.color,
+                        transparent: true,
+                        opacity: 0.7
+                    });
+                    mesh = new THREE.Mesh(geometry, windowMaterial);
+                } else if (item.name === "plante") {
+                    // Plant is a cylinder with green top
+                    geometry = new THREE.CylinderGeometry(0.15, 0.2, item.size[2], 8);
+                    const plantMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+                    mesh = new THREE.Mesh(geometry, plantMaterial);
+                    
+                    // Add leaves
+                    const leavesGeometry = new THREE.ConeGeometry(0.25, 0.4, 8);
+                    const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+                    const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+                    leaves.position.y = item.size[2]/2 + 0.2;
+                    mesh.add(leaves);
+                } else {
+                    // Default to box for other items
+                    geometry = new THREE.BoxGeometry(...item.size);
+                    const material = new THREE.MeshStandardMaterial({ 
+                        color: item.color,
+                        roughness: 0.7
+                    });
+                    mesh = new THREE.Mesh(geometry, material);
+                }
+                
+                // Set position based on position code
+                const pos = positionMap[item.position];
+                mesh.position.set(pos.x, item.size[2]/2, pos.z);
+                
+                // Add rotation for some items
+                if (item.name === "pat") {
+                    mesh.rotation.y = Math.PI / 2;
+                }
+                
+                // Enable shadows
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                
+                // Store item name for selection
+                mesh.userData = { name: item.name };
+                
+                scene.add(mesh);
+                roomObjects.push(mesh);
+            });
+        }
+        
+        function setupItemSelection() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            
+            function onMouseClick(event) {
+                // Calculate mouse position in normalized device coordinates
+                const rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                // Update the picking ray with the camera and mouse position
+                raycaster.setFromCamera(mouse, camera);
+                
+                // Calculate objects intersecting the picking ray
+                const intersects = raycaster.intersectObjects(roomObjects);
+                
+                if (intersects.length > 0) {
+                    // Highlight the selected object
+                    if (selectedObject) {
+                        selectedObject.material.emissive.setHex(selectedObject.userData.originalEmissive || 0x000000);
+                    }
+                    
+                    selectedObject = intersects[0].object;
+                    selectedObject.userData.originalEmissive = selectedObject.material.emissive.getHex();
+                    selectedObject.material.emissive.setHex(0x333333);
+                    
+                    // Show notification
+                    showNotification(`Ai selectat: ${selectedObject.userData.name}`);
+                }
+            }
+            
+            renderer.domElement.addEventListener('click', onMouseClick);
+        }
+        
+        function setupControls() {
+            // Light intensity slider
+            const lightSlider = document.getElementById('lightSlider');
+            const lightValue = document.getElementById('lightValue');
+            
+            lightSlider.addEventListener('input', function() {
+                const value = this.value;
+                lightValue.textContent = `${value}%`;
+                
+                // Update ambient light intensity
+                ambientLight.intensity = value / 100;
+                
+                // Update directional light intensity
+                directionalLight.intensity = value / 200;
+            });
+            
+            // View buttons
+            document.getElementById('viewTop').addEventListener('click', function() {
+                camera.position.set(0, ROOM_HEIGHT * 2, 0);
+                camera.lookAt(0, 0, 0);
+                controls.update();
+            });
+            
+            document.getElementById('viewDefault').addEventListener('click', function() {
+                camera.position.set(4, 3, 4);
+                camera.lookAt(0, ROOM_HEIGHT/2, 0);
+                controls.update();
+            });
+        }
+        
+        function createItemButtons() {
+            const itemList = document.getElementById('itemList');
+            
+            roomItems.forEach(item => {
+                const button = document.createElement('button');
+                button.className = 'item-btn';
+                button.textContent = item.name;
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('.item-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Find and focus on the selected item
+                    const targetObject = roomObjects.find(obj => obj.userData.name === item.name);
+                    if (targetObject) {
+                        // Move camera to look at the object
+                        controls.target.copy(targetObject.position);
+                        camera.position.set(
+                            targetObject.position.x + 2,
+                            targetObject.position.y + 1,
+                            targetObject.position.z + 2
+                        );
+                        controls.update();
+                        
+                        // Highlight the object
+                        if (selectedObject) {
+                            selectedObject.material.emissive.setHex(selectedObject.userData.originalEmissive || 0x000000);
+                        }
+                        
+                        selectedObject = targetObject;
+                        selectedObject.userData.originalEmissive = selectedObject.material.emissive.getHex();
+                        selectedObject.material.emissive.setHex(0x555555);
+                        
+                        // Show notification
+                        showNotification(`Te uiți la: ${item.name}`);
+                    }
+                });
+                
+                itemList.appendChild(button);
+            });
+        }
+        
+        function showNotification(message) {
+            // Create notification element
+            let notification = document.getElementById('notification');
+            
+            if (!notification) {
+                notification = document.createElement('div');
+                notification.id = 'notification';
+                notification.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background-color: #3498db;
+                    color: white;
+                    padding: 15px 25px;
+                    border-radius: 8px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    font-weight: 500;
+                    opacity: 0;
+                    transform: translateY(20px);
+                    transition: all 0.3s ease;
+                `;
+                document.body.appendChild(notification);
+            }
+            
+            notification.textContent = message;
+            
+            // Show notification
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateY(0)';
+            }, 10);
+            
+            // Hide notification after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateY(20px)';
+            }, 3000);
+        }
+        
+        function onWindowResize() {
+            const canvas = document.getElementById('room3d');
+            camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
