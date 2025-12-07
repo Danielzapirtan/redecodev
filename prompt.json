@@ -48,8 +48,7 @@
         "ifc_class": "IfcFurniture",
         "position": {"x": 1.4, "y": 2.5},
         "dimensions": {"length": 1.6, "width": 0.6},
-        "height": 0.5,
-        "rotation": 90
+        "height": 0.5
       },
       {
         "type": "Window",
@@ -94,15 +93,13 @@
     }
   },
   "visualization_instructions": {
-    "task": "Generate two complementary, photorealistic 3D renderings of Bedroom_004",
+    "task": "Generate a photorealistic 3D rendering of Bedroom_004",
     "requirements": [
-      "Rendering 1: Primary viewpoint showing overall room layout",
-      "Rendering 2: Complementary viewpoint focusing on key furniture arrangements",
+      "Viewpoint showing overall room layout",
       "Maintain exact spatial positioning of all objects as specified",
       "Maintain precise dimensional accuracy of all objects",
       "Apply classical architectural style consistently",
       "Ensure natural lighting conditions as specified"
-    ],
-    "output_format": "High-resolution architectural visualization"
+    ]
   }
 }
