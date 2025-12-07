@@ -9,11 +9,9 @@
         "style": "japanese",
         "items": [
           "bookcase",
-        "wardrobe",
-        "bed",
+        ["wardrobe", "bed"],
         ["window", "plants"],
-        ["desk", "chair"],
-        "bedside"        
+        ["desk", "chair", "bedside"]
         ],
         "metadata": {
           "light": "natural"
@@ -22,9 +20,8 @@
       "role": "image generator",
       "task": "please generate a realistic panoramic 3d image of bedroom_004",
       "constraints": [
-        "Only one side (east) has a window",
       "Bookcase on the west side",
-      "Wardrobe, bed on the same (north) side, bed in the north-east corner; bed alongside the wall; bed length 130cm",
+      "Wardrobe, bed on the same (north) side, bed in the north-east corner; șifonierul în continuare la pat; bed length 130cm",
       "Window on the east side (width: 160cm)",
       "Plants on the window edge",
       "Door south-west corner",
