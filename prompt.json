@@ -10,21 +10,21 @@
         "bookcase",
       ["wardrobe", "bed"],
       ["window", "plants"],
-      ["desk", "chair", "bedside"]
+      ["desk", "chair", "noptieră"]
       ],
       "metadata": {
         "light": "natural"
-      }
+      },
+      "constraints": [
+        "Bookcase on the west side",
+      "Wardrobe on the north side, bed in the north-east corner; patul de-a lungul peretelui; șifonierul în continuare la pat; bed length 130cm",
+      "Window on the east side (width: 160cm)",
+      "Plants on the window edge",
+      "Door south-west corner",
+      "Noptieră south side",
+      "Desk with chair - south-east corner"
+      ]
   },
-    "constraints": [
-      "Bookcase on the west side",
-    "Wardrobe on the north side, bed in the north-east corner; patul de-a lungul peretelui; șifonierul în continuare la pat; bed length 130cm",
-    "Window on the east side (width: 160cm)",
-    "Plants on the window edge",
-    "Door south-west corner",
-    "Noptieră south side",
-    "Desk with chair - south-east corner"
-    ],
     "role": "image generator",
     "task": "please generate an album of two complementary realistic 3d images of bedroom_004 (one from the southwest corner, the other from the southeast corner), respecting the constraints above; only some objects are visible in each image."
 }
