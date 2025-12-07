@@ -10,32 +10,39 @@
 			{
 				"type": "Door",
 				"align": "west-southwest",
+				"display": "none"
 			},
 			{
 				"type": "Bookcase",
-				"align": "west-northwest"
+				"align": "west-northwest",
+				"display": "none"
 			},
 			{
 				"type": "Wardrobe",
-				"align": "north"
+				"align": "north",
+				"display": "block"
 			},
 			{
 				"type": "Bed",
-				"align": "north-northeast"
+				"align": "north-northeast",
+				"display": "block"
 			},
 			{
 				"type": "Window",
 				"type": "Plants",
-				"align": "east"
+				"align": "east",
+				"display": "block"
 			},
 			{
 				"type": "Desk",
 				"type": "Chair",
-				"align": south-southeast"
+				"align": south-southeast",
+				"display": "block"
 			},
 			{
 				"type": "Nightstand",
-				"align": "south"
+				"align": "south",
+				"display": "block"
 			}
 		}
 	},
