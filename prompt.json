@@ -1,33 +1,31 @@
 {
-  "prompt": {
-    "room": {
-      "id": "bedroom_004",
-        "name": "bedroom",
-        "description": "bedroom layout",
-        "shape": "rectangular",
-        "dimensions": [3.2, 3.1, 2.2],
-        "style": "japanese",
-        "items": [
-          "bookcase",
-        ["wardrobe", "bed"],
-        ["window", "plants"],
-        ["desk", "chair", "bedside"]
-        ],
-        "metadata": {
-          "light": "natural"
-        }
-    },
-      "role": "image generator",
-      "task": "please generate a realistic panoramic 3d image of bedroom_004",
-      "constraints": [
+  "room": {
+    "id": "bedroom_004",
+      "name": "bedroom",
+      "description": "bedroom layout",
+      "shape": "rectangular",
+      "dimensions": [3.2, 3.1, 2.2],
+      "style": "classical",
+      "items": [
+        "bookcase",
+      ["wardrobe", "bed"],
+      ["window", "plants"],
+      ["desk", "chair", "bedside"]
+      ],
+      "metadata": {
+        "light": "natural"
+      }
+  },
+    "role": "image generator",
+    "task": "please generate a realistic panoramic 3d image of bedroom_004",
+    "constraints": [
       "Bookcase on the west side",
-      "Wardrobe, bed on the same (north) side, bed in the north-east corner; șifonierul în continuare la pat; bed length 130cm",
-      "Window on the east side (width: 160cm)",
-      "Plants on the window edge",
-      "Door south-west corner",
-      "Bedside south side",
-      "Desk south-east corner"
-      ]
-  }
+    "Wardrobe, bed on the same (north) side, bed in the north-east corner; patul de-a lungul peretelui; șifonierul în continuare la pat; bed length 130cm",
+    "Window on the east side (width: 160cm)",
+    "Plants on the window edge",
+    "Door south-west corner",
+    "Bedside south side",
+    "Desk with chair - south-east corner"
+    ]
 }
 
