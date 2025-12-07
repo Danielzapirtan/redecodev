@@ -10,22 +10,22 @@
 			{
 				"type": "Door",
 				"align": "west-southwest",
-				"display": "none"
+				"display": "block"
 			},
 			{
 				"type": "Bookcase",
 				"align": "west-northwest",
-				"display": "block"
+				"display": "none"
 			},
 			{
 				"type": "Wardrobe",
 				"align": "north",
-				"display": "block"
+				"display": "none"
 			},
 			{
 				"type": "Bed",
 				"align": "north-northeast",
-				"display": "block"
+				"display": "none"
 			},
 			{
 				"type": "Window",
@@ -37,15 +37,15 @@
 				"type": "Desk",
 				"type": "Chair",
 				"align": south-southeast",
-				"display": "none"
+				"display": "block"
 			},
 			{
 				"type": "Nightstand",
 				"align": "south",
-				"display": "none"
+				"display": "block"
 			}
 		}
 	},
 	"role": "image generator",
-	"task": "generate a 3d image of room_20251207_001 as if virtual camera is oriented towards north"
+	"task": "generate a 3d image of room_20251207_001 as if virtual camera is oriented towards south"
 }
