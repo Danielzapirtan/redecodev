@@ -23,7 +23,8 @@
       "task": "please generate a realistic panoramic 3d image of bedroom_004",
       "constraints": [
         "Only one side (east) has a window",
-      "Bookcase, wardrobe, bed on the same (north) side, bed in the north-east corner; bed length 130cm",
+      "Bookcase on the west side",
+      "Wardrobe, bed on the same (north) side, bed in the north-east corner; bed alongside the wall; bed length 130cm",
       "Window on the east side (width: 160cm)",
       "Plants on the window edge",
       "Door south-west corner",
