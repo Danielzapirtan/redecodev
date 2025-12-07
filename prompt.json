@@ -31,6 +31,6 @@
       ]
   },
     "role": "image generator",
-    "task": "please generate an album of two complementary realistic 3d images of bedroom_004; only some objects are visible in each image."
+    "task": "please generate an album of two complementary realistic 3d images of bedroom_004."
 }
 
