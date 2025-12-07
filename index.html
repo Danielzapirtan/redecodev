@@ -1,66 +1,959 @@
 <!DOCTYPE html>
-<html>
+<html lang="ro">
 <head>
-    <title>Room Design Prompt Generator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Designer de Camere AI - Generator de Prompturi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .design-interface { /* Your drag & drop UI */ }
-        .prompt-display {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            font-family: monospace;
+        :root {
+            --primary: #10a37f;
+            --primary-dark: #0d8c6d;
+            --secondary: #5438dc;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --border-radius: 12px;
+            --shadow: 0 4px 12px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
         }
-        .copy-btn {
-            background: #10a37f;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .logo i {
+            font-size: 2.5rem;
+            color: var(--primary);
+        }
+        
+        h1 {
+            color: var(--primary);
+            font-size: 2.2rem;
+        }
+        
+        .subtitle {
+            color: var(--gray);
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 992px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .design-panel, .prompt-panel {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light-gray);
+        }
+        
+        .panel-title i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+        
+        h2 {
+            color: var(--dark);
+            font-size: 1.5rem;
+        }
+        
+        .design-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        @media (max-width: 768px) {
+            .design-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .control-group {
+            margin-bottom: 10px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        select, input[type="color"], input[type="range"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+            background: white;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .color-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--light-gray);
+        }
+        
+        .range-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .furniture-selection {
+            margin-top: 20px;
+        }
+        
+        .furniture-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 576px) {
+            .furniture-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .furniture-item {
+            padding: 12px;
+            background: var(--light-gray);
+            border-radius: 8px;
+            text-align: center;
             cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
+        }
+        
+        .furniture-item:hover {
+            background: #dae0e5;
+        }
+        
+        .furniture-item.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+        
+        .furniture-item i {
+            display: block;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .room-preview {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 25px;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed #c3cfe2;
+        }
+        
+        .room-icon {
+            font-size: 4rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .room-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        .detail-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .prompt-display {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(16, 163, 127, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--light-gray);
+            color: var(--dark);
+        }
+        
+        .btn-secondary:hover {
+            background: #dae0e5;
+        }
+        
+        .instructions {
+            background: #e8f4f1;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .instructions h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: var(--primary-dark);
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+        
+        .history-panel {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-top: 30px;
+        }
+        
+        .history-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .history-item {
+            background: var(--light-gray);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
+        }
+        
+        .history-item:hover {
+            background: #dae0e5;
+            border-color: var(--primary);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--light-gray);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.5s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background: var(--secondary);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-left: 5px;
         }
     </style>
 </head>
 <body>
-    <div class="design-interface">
-        <!-- Room design tools -->
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-couch"></i>
+                <h1>Designer de Camere AI</h1>
+            </div>
+            <p class="subtitle">
+                Creează designul perfect pentru camera ta! Personalizează toate detaliile, generează promptul optimizat 
+                și folosește-l în ChatGPT cu DALL-E 3 pentru a obține renderings profesionale.
+            </p>
+        </header>
+        
+        <main>
+            <div class="app-container">
+                <!-- Panou Design Cameră -->
+                <section class="design-panel">
+                    <div class="panel-title">
+                        <i class="fas fa-paint-roller"></i>
+                        <h2>Personalizează Camera Ta</h2>
+                    </div>
+                    
+                    <div class="design-controls">
+                        <div class="control-group">
+                            <label for="roomType"><i class="fas fa-door-open"></i> Tip Cameră</label>
+                            <select id="roomType">
+                                <option value="living">Living</option>
+                                <option value="bedroom">Dormitor</option>
+                                <option value="kitchen">Bucătărie</option>
+                                <option value="bathroom">Baie</option>
+                                <option value="office">Birou</option>
+                                <option value="dining">Sufragerie</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="style"><i class="fas fa-palette"></i> Stil Interior</label>
+                            <select id="style">
+                                <option value="modern">Modern</option>
+                                <option value="scandinavian">Scandinavian</option>
+                                <option value="industrial">Industrial</option>
+                                <option value="bohemian">Bohemian</option>
+                                <option value="traditional">Traditional</option>
+                                <option value="minimalist">Minimalist</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="colorScheme"><i class="fas fa-fill-drip"></i> Schema de Culori</label>
+                            <div class="color-picker-container">
+                                <div class="color-preview" id="colorPreview" style="background: #4a6fa5"></div>
+                                <input type="color" id="colorScheme" value="#4a6fa5">
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="lighting"><i class="fas fa-lightbulb"></i> Iluminat</label>
+                            <select id="lighting">
+                                <option value="natural">Natural (zi)</option>
+                                <option value="warm">Călduros (seară)</option>
+                                <option value="bright">Luminos (studio)</option>
+                                <option value="moody">Atmosferic</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="size"><i class="fas fa-expand-arrows-alt"></i> Dimensiune Cameră</label>
+                            <input type="range" id="size" min="1" max="3" value="2">
+                            <span class="range-value" id="sizeValue">Medie</span>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="mood"><i class="fas fa-smile"></i> Atmosferă</label>
+                            <select id="mood">
+                                <option value="cozy">Comod & Confy</option>
+                                <option value="elegant">Elegant</option>
+                                <option value="energetic">Energic</option>
+                                <option value="calm">Calm & Relaxant</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="furniture-selection">
+                        <label><i class="fas fa-chair"></i> Mobilier <span class="badge">Selectează minim 2</span></label>
+                        <div class="furniture-grid" id="furnitureGrid">
+                            <!-- Furniture items will be added by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="room-preview">
+                        <i class="fas fa-home room-icon" id="roomIcon"></i>
+                        <h3 id="roomTitle">Living Modern</h3>
+                        <div class="room-details" id="roomDetails">
+                            <!-- Details will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Panou Prompt și Instrucțiuni -->
+                <section class="prompt-panel">
+                    <div class="panel-title">
+                        <i class="fas fa-magic"></i>
+                        <h2>Prompt Generat</h2>
+                    </div>
+                    
+                    <div class="prompt-display" id="promptDisplay">
+                        Alege opțiunile de design pentru a genera promptul...
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="copyBtn">
+                            <i class="far fa-copy"></i> Copiază Promptul
+                        </button>
+                        <button class="btn btn-secondary" id="generateBtn">
+                            <i class="fas fa-sync-alt"></i> Regenerează
+                        </button>
+                    </div>
+                    
+                    <div class="instructions">
+                        <h3><i class="fas fa-graduation-cap"></i> Cum folosești promptul:</h3>
+                        <ol>
+                            <li><strong>Copiază promptul</strong> de mai sus (butonul "Copiază Promptul")</li>
+                            <li><strong>Accesează</strong> <a href="https://chat.openai.com" target="_blank">ChatGPT</a> (necesitară cont cu DALL-E 3)</li>
+                            <li><strong>Lipește promptul</strong> și adaugă: "Creează această cameră folosind DALL-E 3"</li>
+                            <li><strong>Așteaptă generarea</strong> și descarcă imaginea rezultată</li>
+                            <li><strong>Experimentează</strong> cu variații modificând promptul în ChatGPT</li>
+                        </ol>
+                        <p style="margin-top: 10px; font-style: italic; color: var(--primary-dark);">
+                            <i class="fas fa-lightbulb"></i> 
+                            <strong>Sfat:</strong> Pentru rezultate mai bune, adaugă "photorealistic, 8k, professional interior design" în promptul tău.
+                        </p>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Istoric Prompturi (opțional) -->
+            <section class="history-panel" id="historyPanel">
+                <div class="panel-title">
+                    <i class="fas fa-history"></i>
+                    <h2>Istoric Prompturi <span class="badge">Beta</span></h2>
+                </div>
+                <p>Prompturile tale recente (stocate local în browser):</p>
+                <div class="history-list" id="historyList">
+                    <!-- History items will be added by JavaScript -->
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>Acest tool generează prompturi optimizate pentru DALL-E 3 prin ChatGPT.</p>
+            <p>Nu suntem afiliați cu OpenAI. ChatGPT Plus este necesar pentru generarea imaginilor.</p>
+        </footer>
     </div>
     
-    <div class="prompt-display" id="generatedPrompt">
-        <!-- Generated prompt appears here -->
-    </div>
-    
-    <button class="copy-btn" onclick="copyPrompt()">📋 Copy Prompt for ChatGPT</button>
-    
-    <div class="instructions">
-        <h3>How to use:</h3>
-        <ol>
-            <li>Design your room above</li>
-            <li>Copy the prompt</li>
-            <li>Go to <a href="https://chat.openai.com" target="_blank">ChatGPT</a></li>
-            <li>Paste and say "Create this image using DALL-E 3"</li>
-            <li>Download your generated room!</li>
-        </ol>
+    <!-- Notificare Copiere -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span>Prompt copiat în clipboard!</span>
     </div>
 
     <script>
-        function generatePromptFromDesign(design) {
-            // Your prompt engineering logic
-            return `Professional interior design...`;
-        }
+        // Date inițiale
+        const furnitureItems = [
+            { id: 'sofa', name: 'Scaun/Canapea', icon: 'fas fa-couch' },
+            { id: 'table', name: 'Masă', icon: 'fas fa-table' },
+            { id: 'chair', name: 'Scaun', icon: 'fas fa-chair' },
+            { id: 'bed', name: 'Pat', icon: 'fas fa-bed' },
+            { id: 'desk', name: 'Birou', icon: 'fas fa-desktop' },
+            { id: 'lamp', name: 'Lampă', icon: 'fas fa-lightbulb' },
+            { id: 'shelf', name: 'Raft', icon: 'fas fa-th-large' },
+            { id: 'plant', name: 'Plantă', icon: 'fas fa-leaf' },
+            { id: 'rug', name: 'Covor', icon: 'fas fa-square' },
+            { id: 'art', name: 'Artă Perete', icon: 'fas fa-image' },
+            { id: 'tv', name: 'TV', icon: 'fas fa-tv' },
+            { id: 'closet', name: 'Dulap', icon: 'fas fa-archive' }
+        ];
         
-        function copyPrompt() {
-            const promptText = document.getElementById('generatedPrompt').innerText;
-            navigator.clipboard.writeText(promptText);
-            alert('Prompt copied! Now paste it in ChatGPT with DALL-E 3');
-        }
+        const roomIcons = {
+            'living': 'fas fa-couch',
+            'bedroom': 'fas fa-bed',
+            'kitchen': 'fas fa-utensils',
+            'bathroom': 'fas fa-bath',
+            'office': 'fas fa-briefcase',
+            'dining': 'fas fa-utensils'
+        };
         
-        // Example trigger when design changes
-        document.querySelector('.design-interface').addEventListener('change', function() {
-            const design = getCurrentDesign();
-            const prompt = generatePromptFromDesign(design);
-            document.getElementById('generatedPrompt').innerText = prompt;
+        const sizeLabels = {
+            1: 'Mică',
+            2: 'Medie',
+            3: 'Mare'
+        };
+        
+        // Starea aplicației
+        let selectedFurniture = ['sofa', 'table'];
+        let promptHistory = JSON.parse(localStorage.getItem('roomPromptHistory')) || [];
+        
+        // Inițializare la încărcarea paginii
+        document.addEventListener('DOMContentLoaded', function() {
+            initFurnitureGrid();
+            initEventListeners();
+            updateRoomPreview();
+            generatePrompt();
+            updateHistoryPanel();
         });
+        
+        // Inițializează grid-ul de mobilier
+        function initFurnitureGrid() {
+            const grid = document.getElementById('furnitureGrid');
+            grid.innerHTML = '';
+            
+            furnitureItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `furniture-item ${selectedFurniture.includes(item.id) ? 'selected' : ''}`;
+                div.dataset.id = item.id;
+                div.innerHTML = `
+                    <i class="${item.icon}"></i>
+                    <span>${item.name}</span>
+                `;
+                div.addEventListener('click', () => toggleFurniture(item.id));
+                grid.appendChild(div);
+            });
+        }
+        
+        // Comută selecția mobilierului
+        function toggleFurniture(furnitureId) {
+            const index = selectedFurniture.indexOf(furnitureId);
+            if (index === -1) {
+                selectedFurniture.push(furnitureId);
+            } else {
+                if (selectedFurniture.length > 2) {
+                    selectedFurniture.splice(index, 1);
+                } else {
+                    showNotification('Selectează minim 2 elemente de mobilier!', 'warning');
+                    return;
+                }
+            }
+            
+            // Actualizează UI
+            document.querySelectorAll('.furniture-item').forEach(item => {
+                if (item.dataset.id === furnitureId) {
+                    item.classList.toggle('selected');
+                }
+            });
+            
+            updateRoomPreview();
+            generatePrompt();
+        }
+        
+        // Inițializează event listeners
+        function initEventListeners() {
+            // Controale design
+            document.getElementById('roomType').addEventListener('change', updateRoomPreview);
+            document.getElementById('style').addEventListener('change', updateRoomPreview);
+            document.getElementById('colorScheme').addEventListener('input', updateRoomPreview);
+            document.getElementById('lighting').addEventListener('change', updateRoomPreview);
+            document.getElementById('size').addEventListener('input', updateRoomPreview);
+            document.getElementById('mood').addEventListener('change', updateRoomPreview);
+            
+            // Butoane acțiuni
+            document.getElementById('copyBtn').addEventListener('click', copyPrompt);
+            document.getElementById('generateBtn').addEventListener('click', generatePrompt);
+            
+            // Actualizează valoarea dimensiunii
+            document.getElementById('size').addEventListener('input', function() {
+                document.getElementById('sizeValue').textContent = sizeLabels[this.value];
+                updateRoomPreview();
+                generatePrompt();
+            });
+            
+            // Actualizează previzualizarea culorii
+            document.getElementById('colorScheme').addEventListener('input', function() {
+                document.getElementById('colorPreview').style.background = this.value;
+                updateRoomPreview();
+                generatePrompt();
+            });
+            
+            // Ascunde panoul istoric dacă nu există date
+            if (promptHistory.length === 0) {
+                document.getElementById('historyPanel').style.display = 'none';
+            }
+        }
+        
+        // Actualizează previzualizarea camerei
+        function updateRoomPreview() {
+            const roomType = document.getElementById('roomType').value;
+            const style = document.getElementById('style').value;
+            const color = document.getElementById('colorScheme').value;
+            const lighting = document.getElementById('lighting').value;
+            const size = document.getElementById('size').value;
+            const mood = document.getElementById('mood').value;
+            
+            // Actualizează iconița
+            document.getElementById('roomIcon').className = `fas ${roomIcons[roomType]} room-icon`;
+            
+            // Actualizează titlul
+            const roomNames = {
+                'living': 'Living',
+                'bedroom': 'Dormitor',
+                'kitchen': 'Bucătărie',
+                'bathroom': 'Baie',
+                'office': 'Birou',
+                'dining': 'Sufragerie'
+            };
+            
+            const styleNames = {
+                'modern': 'Modern',
+                'scandinavian': 'Scandinavian',
+                'industrial': 'Industrial',
+                'bohemian': 'Bohemian',
+                'traditional': 'Traditional',
+                'minimalist': 'Minimalist'
+            };
+            
+            document.getElementById('roomTitle').textContent = 
+                `${roomNames[roomType]} ${styleNames[style]}`;
+            
+            // Actualizează detaliile
+            const selectedFurnitureNames = selectedFurniture.map(id => 
+                furnitureItems.find(item => item.id === id).name
+            );
+            
+            document.getElementById('roomDetails').innerHTML = `
+                <div class="detail-item">
+                    <strong>Stil:</strong> ${styleNames[style]}
+                </div>
+                <div class="detail-item">
+                    <strong>Culoare:</strong> ${color.toUpperCase()}
+                </div>
+                <div class="detail-item">
+                    <strong>Iluminat:</strong> ${lighting}
+                </div>
+                <div class="detail-item">
+                    <strong>Dimensiune:</strong> ${sizeLabels[size]}
+                </div>
+                <div class="detail-item">
+                    <strong>Mobilier:</strong> ${selectedFurnitureNames.slice(0, 3).join(', ')}${selectedFurnitureNames.length > 3 ? '...' : ''}
+                </div>
+                <div class="detail-item">
+                    <strong>Atmosferă:</strong> ${mood}
+                </div>
+            `;
+        }
+        
+        // Generează promptul
+        function generatePrompt() {
+            const roomType = document.getElementById('roomType').value;
+            const style = document.getElementById('style').value;
+            const color = document.getElementById('colorScheme').value;
+            const lighting = document.getElementById('lighting').value;
+            const size = document.getElementById('size').value;
+            const mood = document.getElementById('mood').value;
+            
+            const selectedFurnitureNames = selectedFurniture.map(id => 
+                furnitureItems.find(item => item.id === id).name
+            );
+            
+            // Mapează valorile pentru prompt
+            const roomNames = {
+                'living': 'living room',
+                'bedroom': 'bedroom',
+                'kitchen': 'kitchen',
+                'bathroom': 'bathroom',
+                'office': 'home office',
+                'dining': 'dining room'
+            };
+            
+            const styleKeywords = {
+                'modern': 'modern, contemporary, sleek lines, minimalist decor',
+                'scandinavian': 'Scandinavian design, light wood, hygge, functional, airy',
+                'industrial': 'industrial style, exposed brick, metal accents, raw materials',
+                'bohemian': 'bohemian style, eclectic, colorful textiles, plants, layered patterns',
+                'traditional': 'traditional, classic furniture, rich fabrics, warm tones',
+                'minimalist': 'minimalist, clean lines, uncluttered, functional, monochromatic'
+            };
+            
+            const lightingKeywords = {
+                'natural': 'natural daylight streaming through large windows',
+                'warm': 'warm ambient lighting, cozy evening atmosphere',
+                'bright': 'bright studio lighting, well-lit, professional photography lighting',
+                'moody': 'moody atmospheric lighting, dramatic shadows, accent lighting'
+            };
+            
+            const moodKeywords = {
+                'cozy': 'cozy and comfortable atmosphere, inviting space',
+                'elegant': 'elegant and sophisticated, luxurious feel',
+                'energetic': 'energetic and vibrant, dynamic space',
+                'calm': 'calm and relaxing, tranquil environment'
+            };
+            
+            // Construiește promptul
+            const prompt = `
+Render interior design profesionist pentru o cameră ${roomNames[roomType]}.
+
+SPECIFICAȚII DESIGN:
+- Stil: ${styleKeywords[style]}
+- Schema de culori: Dominantă ${color.toUpperCase()} cu accente complementare
+- Iluminat: ${lightingKeywords[lighting]}
+- Dimensiune cameră: ${sizeLabels[size].toLowerCase()}, spațioasă
+- Atmosferă: ${moodKeywords[mood]}
+- Mobilier principal: ${selectedFurnitureNames.join(', ')}
+
+CERINȚE PROFESIONALE:
+- Calitate fotorealistică, 8K rezoluție
+- Iluminat profesional de studio
+- Texturi detaliate și materiale realiste
+- Unghi larg (24mm) pentru perspectiva camerei
+- Compoziție armonioasă, fără elemente distorsionate
+- Fără text sau etichete în imagine
+- Calitate revistă de design interior (Architectural Digest, Elle Decor)
+
+TECHNICAL SPECIFICATIONS:
+- Aspect ratio: 16:9
+- Style: vivid
+- Quality: hd
+`;
+
+            // Afișează promptul
+            document.getElementById('promptDisplay').textContent = prompt;
+            
+            // Salvează în istoric
+            saveToHistory(prompt);
+            
+            return prompt;
+        }
+        
+        // Copiază promptul în clipboard
+        async function copyPrompt() {
+            const prompt = document.getElementById('promptDisplay').textContent;
+            
+            try {
+                await navigator.clipboard.writeText(prompt);
+                showNotification('Prompt copiat în clipboard!');
+            } catch (err) {
+                // Fallback pentru browsere vechi
+                const textArea = document.createElement('textarea');
+                textArea.value = prompt;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Prompt copiat în clipboard!');
+            }
+        }
+        
+        // Afișează notificare
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const icon = notification.querySelector('i');
+            const text = notification.querySelector('span');
+            
+            text.textContent = message;
+            
+            if (type === 'warning') {
+                notification.style.background = '#ffc107';
+                icon.className = 'fas fa-exclamation-triangle';
+            } else {
+                notification.style.background = 'var(--primary)';
+                icon.className = 'fas fa-check-circle';
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Salvează prompt în istoric
+        function saveToHistory(prompt) {
+            const designSpecs = {
+                roomType: document.getElementById('roomType').value,
+                style: document.getElementById('style').value,
+                color: document.getElementById('colorScheme').value,
+                timestamp: new Date().toISOString()
+            };
+            
+            const historyItem = {
+                id: Date.now(),
+                prompt: prompt.substring(0, 150) + '...',
+                fullPrompt: prompt,
+                specs: designSpecs,
+                date: new Date().toLocaleDateString('ro-RO')
+            };
+            
+            // Adaugă la începutul listei
+            promptHistory.unshift(historyItem);
+            
+            // Păstrează maxim 10 intrări
+            if (promptHistory.length > 10) {
+                promptHistory = promptHistory.slice(0, 10);
+            }
+            
+            // Salvează în localStorage
+            localStorage.setItem('roomPromptHistory', JSON.stringify(promptHistory));
+            
+            // Actualizează UI
+            updateHistoryPanel();
+        }
+        
+        // Actualizează panoul de istoric
+        function updateHistoryPanel() {
+            const historyList = document.getElementById('historyList');
+            const historyPanel = document.getElementById('historyPanel');
+            
+            if (promptHistory.length === 0) {
+                historyPanel.style.display = 'none';
+                return;
+            }
+            
+            historyPanel.style.display = 'block';
+            historyList.innerHTML = '';
+            
+            promptHistory.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <strong>${getRoomName(item.specs.roomType)} - ${getStyleName(item.specs.style)}</strong>
+                    <p style="margin: 5px 0; font-size: 0.85rem; color: var(--gray);">${item.prompt}</p>
+                    <small><i class="far fa-clock"></i> ${item.date}</small>
+                `;
+                
+                div.addEventListener('click', () => {
+                    document.getElementById('promptDisplay').textContent = item.fullPrompt;
+                    showNotification('Prompt încărcat din istoric!');
+                });
+                
+                historyList.appendChild(div);
+            });
+        }
+        
+        // Funcții helper
+        function getRoomName(key) {
+            const names = {
+                'living': 'Living',
+                'bedroom': 'Dormitor',
+                'kitchen': 'Bucătărie',
+                'bathroom': 'Baie',
+                'office': 'Birou',
+                'dining': 'Sufragerie'
+            };
+            return names[key] || key;
+        }
+        
+        function getStyleName(key) {
+            const names = {
+                'modern': 'Modern',
+                'scandinavian': 'Scandinavian',
+                'industrial': 'Industrial',
+                'bohemian': 'Bohemian',
+                'traditional': 'Traditional',
+                'minimalist': 'Minimalist'
+            };
+            return names[key] || key;
+        }
     </script>
 </body>
 </html>
