@@ -1,14 +1,13 @@
 {
   "prompt": {
     "room": {
-      "id": "bedroom_003",
+      "id": "bedroom_004",
       "name": "bedroom",
       "description": "bedroom layout",
       "shape": "rectangular",
       "dimensions": [3.2, 3.1, 2.2],
       "style": "japanese",
       "items": [
-        "door",
         "bookcase",
         "wardrobe",
         "bed",
@@ -21,10 +20,10 @@
       }
     },
     "role": "image generator",
-    "task": "please generate a realistic panoramic 3d image of bedroom_003",
+    "task": "please generate a realistic panoramic 3d image of bedroom_004",
     "constraints": [
       "Only one side has a window",
-      "Camera should be placed in front of the door, seing all the room"
+      "Camera should see the entire room, in a panoramic view (300 degrees wide)"
     ]
   }
 }
