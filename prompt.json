@@ -16,8 +16,6 @@
         "light": "natural"
       }
   },
-    "role": "image generator",
-    "task": "please generate a realistic panoramic 3d image of bedroom_004",
     "constraints": [
       "Bookcase on the west side",
     "Wardrobe, bed on the same (north) side, bed in the north-east corner; patul de-a lungul peretelui; șifonierul în continuare la pat; bed length 130cm",
@@ -26,6 +24,8 @@
     "Door south-west corner",
     "Bedside south side",
     "Desk with chair - south-east corner"
-    ]
+    ],
+    "role": "image generator",
+    "task": "please generate an album of two complementary realistic panoramic 3d images of bedroom_004 (one from the southwest corner, the other from the southeast corner), respecting the constraints above; only some objects are visible in each image."
 }
 
