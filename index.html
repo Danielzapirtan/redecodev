@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Designer de Camere AI - Generator de Prompturi</title>
+    <title>Designer de Camere AI - Generator de Prompturi JSON</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -136,7 +136,7 @@
             color: var(--dark);
         }
         
-        select, input[type="color"], input[type="range"] {
+        select, input[type="color"], input[type="range"], input[type="text"], input[type="number"] {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid var(--light-gray);
@@ -171,6 +171,13 @@
             color: var(--primary);
         }
         
+        .dimensions-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
         .furniture-selection {
             margin-top: 20px;
         }
@@ -185,6 +192,10 @@
         @media (max-width: 576px) {
             .furniture-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .dimensions-container {
+                grid-template-columns: 1fr;
             }
         }
         
@@ -250,18 +261,35 @@
         }
         
         .prompt-display {
-            background: #f8f9fa;
+            background: #1e1e1e;
+            color: #d4d4d4;
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 25px;
             font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 0.95rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre;
             word-wrap: break-word;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
-            border: 1px solid #dee2e6;
+            border: 1px solid #333;
+        }
+        
+        .json-key {
+            color: #9cdcfe;
+        }
+        
+        .json-string {
+            color: #ce9178;
+        }
+        
+        .json-number {
+            color: #b5cea8;
+        }
+        
+        .json-boolean {
+            color: #569cd6;
         }
         
         .action-buttons {
@@ -398,6 +426,71 @@
             font-size: 0.8rem;
             margin-left: 5px;
         }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--light-gray);
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--gray);
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .furniture-controls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--light-gray);
+        }
+        
+        .furniture-list {
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .furniture-config-item {
+            background: var(--light-gray);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .furniture-config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .remove-furniture {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -405,11 +498,11 @@
         <header>
             <div class="logo">
                 <i class="fas fa-couch"></i>
-                <h1>Designer de Camere AI</h1>
+                <h1>Designer de Camere AI - JSON Generator</h1>
             </div>
             <p class="subtitle">
-                Creează designul perfect pentru camera ta! Personalizează toate detaliile, generează promptul optimizat 
-                și folosește-l în ChatGPT cu DALL-E 3 pentru a obține renderings profesionale.
+                Creează configurații JSON pentru prezentare camere! Personalizează toate detaliile, generează promptul JSON optimizat 
+                pentru prezentări și vizualizări 3D.
             </p>
         </header>
         
@@ -419,79 +512,132 @@
                 <section class="design-panel">
                     <div class="panel-title">
                         <i class="fas fa-paint-roller"></i>
-                        <h2>Personalizează Camera Ta</h2>
+                        <h2>Configurează Camera</h2>
                     </div>
                     
-                    <div class="design-controls">
-                        <div class="control-group">
-                            <label for="roomType"><i class="fas fa-door-open"></i> Tip Cameră</label>
-                            <select id="roomType">
-                                <option value="living">Living</option>
-                                <option value="bedroom">Dormitor</option>
-                                <option value="kitchen">Bucătărie</option>
-                                <option value="bathroom">Baie</option>
-                                <option value="office">Birou</option>
-                                <option value="dining">Sufragerie</option>
-                            </select>
+                    <div class="tabs">
+                        <button class="tab active" data-tab="basic">Configurare Basic</button>
+                        <button class="tab" data-tab="dimensions">Dimensiuni</button>
+                        <button class="tab" data-tab="furniture">Mobilier</button>
+                    </div>
+                    
+                    <div class="tab-content active" id="basic-tab">
+                        <div class="design-controls">
+                            <div class="control-group">
+                                <label for="roomType"><i class="fas fa-door-open"></i> Tip Cameră</label>
+                                <select id="roomType">
+                                    <option value="living">Living</option>
+                                    <option value="bedroom" selected>Dormitor</option>
+                                    <option value="kitchen">Bucătărie</option>
+                                    <option value="bathroom">Baie</option>
+                                    <option value="office">Birou</option>
+                                    <option value="dining">Sufragerie</option>
+                                </select>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="style"><i class="fas fa-palette"></i> Stil Interior</label>
+                                <select id="style">
+                                    <option value="modern">Modern</option>
+                                    <option value="classical" selected>Clasic</option>
+                                    <option value="scandinavian">Scandinavian</option>
+                                    <option value="industrial">Industrial</option>
+                                    <option value="bohemian">Bohemian</option>
+                                    <option value="traditional">Traditional</option>
+                                    <option value="minimalist">Minimalist</option>
+                                </select>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="roomId"><i class="fas fa-hashtag"></i> ID Cameră</label>
+                                <input type="text" id="roomId" value="bedroom_004">
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="roomName"><i class="fas fa-signature"></i> Nume Cameră</label>
+                                <input type="text" id="roomName" value="Bedroom">
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="lighting"><i class="fas fa-lightbulb"></i> Iluminat</label>
+                                <select id="lighting">
+                                    <option value="natural" selected>Natural</option>
+                                    <option value="warm">Călduros</option>
+                                    <option value="bright">Luminos</option>
+                                    <option value="moody">Atmosferic</option>
+                                </select>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="description"><i class="fas fa-align-left"></i> Descriere</label>
+                                <textarea id="description" rows="3" style="width:100%; padding:12px 15px; border:2px solid var(--light-gray); border-radius:8px;">Classical-style bedroom layout with furniture placement</textarea>
+                            </div>
                         </div>
-                        
+                    </div>
+                    
+                    <div class="tab-content" id="dimensions-tab">
                         <div class="control-group">
-                            <label for="style"><i class="fas fa-palette"></i> Stil Interior</label>
-                            <select id="style">
-                                <option value="modern">Modern</option>
-                                <option value="scandinavian">Scandinavian</option>
-                                <option value="industrial">Industrial</option>
-                                <option value="bohemian">Bohemian</option>
-                                <option value="traditional">Traditional</option>
-                                <option value="minimalist">Minimalist</option>
-                            </select>
-                        </div>
-                        
-                        <div class="control-group">
-                            <label for="colorScheme"><i class="fas fa-fill-drip"></i> Schema de Culori</label>
-                            <div class="color-picker-container">
-                                <div class="color-preview" id="colorPreview" style="background: #4a6fa5"></div>
-                                <input type="color" id="colorScheme" value="#4a6fa5">
+                            <label><i class="fas fa-expand-arrows-alt"></i> Dimensiuni Cameră (metri)</label>
+                            <div class="dimensions-container">
+                                <div>
+                                    <label for="roomLength">Lungime</label>
+                                    <input type="number" id="roomLength" min="1" max="20" step="0.1" value="3.2">
+                                </div>
+                                <div>
+                                    <label for="roomWidth">Lățime</label>
+                                    <input type="number" id="roomWidth" min="1" max="20" step="0.1" value="3.1">
+                                </div>
+                                <div>
+                                    <label for="roomHeight">Înălțime</label>
+                                    <input type="number" id="roomHeight" min="1" max="10" step="0.1" value="2.2">
+                                </div>
                             </div>
                         </div>
                         
                         <div class="control-group">
-                            <label for="lighting"><i class="fas fa-lightbulb"></i> Iluminat</label>
-                            <select id="lighting">
-                                <option value="natural">Natural (zi)</option>
-                                <option value="warm">Călduros (seară)</option>
-                                <option value="bright">Luminos (studio)</option>
-                                <option value="moody">Atmosferic</option>
-                            </select>
-                        </div>
-                        
-                        <div class="control-group">
-                            <label for="size"><i class="fas fa-expand-arrows-alt"></i> Dimensiune Cameră</label>
-                            <input type="range" id="size" min="1" max="3" value="2">
-                            <span class="range-value" id="sizeValue">Medie</span>
-                        </div>
-                        
-                        <div class="control-group">
-                            <label for="mood"><i class="fas fa-smile"></i> Atmosferă</label>
-                            <select id="mood">
-                                <option value="cozy">Comod & Confy</option>
-                                <option value="elegant">Elegant</option>
-                                <option value="energetic">Energic</option>
-                                <option value="calm">Calm & Relaxant</option>
+                            <label for="roomShape"><i class="fas fa-vector-square"></i> Formă Cameră</label>
+                            <select id="roomShape">
+                                <option value="rectangular" selected>Dreptunghiulară</option>
+                                <option value="square">Pătrată</option>
+                                <option value="L-shaped">Forma L</option>
+                                <option value="open-plan">Open Plan</option>
                             </select>
                         </div>
                     </div>
                     
-                    <div class="furniture-selection">
-                        <label><i class="fas fa-chair"></i> Mobilier <span class="badge">Selectează minim 2</span></label>
-                        <div class="furniture-grid" id="furnitureGrid">
-                            <!-- Furniture items will be added by JavaScript -->
+                    <div class="tab-content" id="furniture-tab">
+                        <div class="furniture-controls">
+                            <div class="control-group">
+                                <label><i class="fas fa-plus-circle"></i> Adaugă Mobilier</label>
+                                <div style="display:flex; gap:10px;">
+                                    <select id="newFurnitureType" style="flex:1;">
+                                        <option value="Door">Ușă</option>
+                                        <option value="Window">Fereastră</option>
+                                        <option value="Bed">Pat</option>
+                                        <option value="Desk">Birou</option>
+                                        <option value="Chair">Scaun</option>
+                                        <option value="Wardrobe">Dulap</option>
+                                        <option value="Bookcase">Bibliotecă</option>
+                                        <option value="Nightstand">Noptieră</option>
+                                        <option value="Plants">Plante</option>
+                                        <option value="Sofa">Canapea</option>
+                                        <option value="Table">Masă</option>
+                                    </select>
+                                    <button class="btn btn-primary" id="addFurnitureBtn" style="flex:0 0 auto;">
+                                        <i class="fas fa-plus"></i> Adaugă
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="furniture-list" id="furnitureList">
+                                <!-- Furniture items will be added by JavaScript -->
+                            </div>
                         </div>
                     </div>
                     
                     <div class="room-preview">
                         <i class="fas fa-home room-icon" id="roomIcon"></i>
-                        <h3 id="roomTitle">Living Modern</h3>
+                        <h3 id="roomTitle">Dormitor Clasic</h3>
                         <div class="room-details" id="roomDetails">
                             <!-- Details will be populated by JavaScript -->
                         </div>
@@ -501,17 +647,79 @@
                 <!-- Panou Prompt și Instrucțiuni -->
                 <section class="prompt-panel">
                     <div class="panel-title">
-                        <i class="fas fa-magic"></i>
-                        <h2>Prompt Generat</h2>
+                        <i class="fas fa-code"></i>
+                        <h2>JSON Configurație Generat</h2>
                     </div>
                     
                     <div class="prompt-display" id="promptDisplay">
-                        Alege opțiunile de design pentru a genera promptul...
+                        {
+  "project_information": {
+    "schema": "IFC-aligned spatial configuration",
+    "version": "1.0",
+    "unit": "meters"
+  },
+  "space": {
+    "id": "bedroom_004",
+    "name": "Bedroom",
+    "description": "Classical-style bedroom layout with furniture placement",
+    "shape": "rectangular",
+    "dimensions": {
+      "length": 3.2,
+      "width": 3.1,
+      "height": 2.2
+    },
+    "style": "classical",
+    "furniture_placement_requirements": [
+      "All objects must be positioned exactly according to provided coordinates",
+      "All objects must maintain exact specified dimensions",
+      "Rotation values must be applied precisely where specified",
+      "Object positions are relative to room origin (0,0) at bottom-left corner"
+    ],
+    "furniture": [
+      {
+        "type": "Door",
+        "ifc_class": "IfcDoor",
+        "position": {"x": 0.0, "y": 0.0},
+        "dimensions": {"length": 0.0, "width": 0.4},
+        "height": 2.1
+      },
+      {
+        "type": "Bookcase",
+        "ifc_class": "IfcFurniture",
+        "position": {"x": 0.0, "y": 1.5},
+        "dimensions": {"length": 0.2, "width": 1.6},
+        "height": 2.0
+      },
+      {
+        "type": "Wardrobe",
+        "ifc_class": "IfcFurniture",
+        "position": {"x": 0.2, "y": 2.7},
+        "dimensions": {"length": 1.2, "width": 0.4},
+        "height": 2.1
+      }
+    ],
+    "metadata": {
+      "lighting": "natural",
+      "coordinate_system": "Cartesian (x,y) with origin at room corner",
+      "scale": "1 unit = 1 meter"
+    }
+  },
+  "visualization_instructions": {
+    "task": "Generate a photorealistic 3D rendering of Bedroom_004",
+    "requirements": [
+      "Viewpoint showing overall room layout",
+      "Maintain exact spatial positioning of all objects as specified",
+      "Maintain precise dimensional accuracy of all objects",
+      "Apply classical architectural style consistently",
+      "Ensure natural lighting conditions as specified"
+    ]
+  }
+}
                     </div>
                     
                     <div class="action-buttons">
                         <button class="btn btn-primary" id="copyBtn">
-                            <i class="far fa-copy"></i> Copiază Promptul
+                            <i class="far fa-copy"></i> Copiază JSON
                         </button>
                         <button class="btn btn-secondary" id="generateBtn">
                             <i class="fas fa-sync-alt"></i> Regenerează
@@ -519,29 +727,29 @@
                     </div>
                     
                     <div class="instructions">
-                        <h3><i class="fas fa-graduation-cap"></i> Cum folosești promptul:</h3>
+                        <h3><i class="fas fa-graduation-cap"></i> Cum folosești configurația JSON:</h3>
                         <ol>
-                            <li><strong>Copiază promptul</strong> de mai sus (butonul "Copiază Promptul")</li>
-                            <li><strong>Accesează</strong> <a href="https://chat.openai.com" target="_blank">ChatGPT</a> (necesitară cont cu DALL-E 3)</li>
-                            <li><strong>Lipește promptul</strong> și adaugă: "Creează această cameră folosind DALL-E 3"</li>
-                            <li><strong>Așteaptă generarea</strong> și descarcă imaginea rezultată</li>
-                            <li><strong>Experimentează</strong> cu variații modificând promptul în ChatGPT</li>
+                            <li><strong>Copiază configurația JSON</strong> (butonul "Copiază JSON")</li>
+                            <li><strong>Folosește-l pentru prezentări</strong> în aplicații de vizualizare 3D</li>
+                            <li><strong>Integrează în tool-uri</strong> de design interior sau arhitectură</li>
+                            <li><strong>Partajează cu clienți</strong> pentru aprobare vizuală</li>
+                            <li><strong>Exportă ca bază</strong> pentru proiecte BIM</li>
                         </ol>
                         <p style="margin-top: 10px; font-style: italic; color: var(--primary-dark);">
                             <i class="fas fa-lightbulb"></i> 
-                            <strong>Sfat:</strong> Pentru rezultate mai bune, adaugă "photorealistic, 8k, professional interior design" în promptul tău.
+                            <strong>Sfat:</strong> Această configurație este optimizată pentru prezentări, nu pentru implementare tehnică detaliată.
                         </p>
                     </div>
                 </section>
             </div>
             
-            <!-- Istoric Prompturi (opțional) -->
+            <!-- Istoric Configurații (opțional) -->
             <section class="history-panel" id="historyPanel">
                 <div class="panel-title">
                     <i class="fas fa-history"></i>
-                    <h2>Istoric Prompturi <span class="badge">Beta</span></h2>
+                    <h2>Istoric Configurații <span class="badge">Beta</span></h2>
                 </div>
-                <p>Prompturile tale recente (stocate local în browser):</p>
+                <p>Configurațiile tale recente (stocate local în browser):</p>
                 <div class="history-list" id="historyList">
                     <!-- History items will be added by JavaScript -->
                 </div>
@@ -549,33 +757,32 @@
         </main>
         
         <footer>
-            <p>Acest tool generează prompturi optimizate pentru DALL-E 3 prin ChatGPT.</p>
-            <p>Nu suntem afiliați cu OpenAI. ChatGPT Plus este necesar pentru generarea imaginilor.</p>
+            <p>Acest tool generează configurații JSON optimizate pentru prezentări de design interior.</p>
+            <p>Formatul este compatibil cu sisteme de vizualizare 3D și tool-uri de prezentare.</p>
         </footer>
     </div>
     
     <!-- Notificare Copiere -->
     <div class="notification" id="notification">
         <i class="fas fa-check-circle"></i>
-        <span>Prompt copiat în clipboard!</span>
+        <span>JSON copiat în clipboard!</span>
     </div>
 
     <script>
         // Date inițiale
-        const furnitureItems = [
-            { id: 'sofa', name: 'Scaun/Canapea', icon: 'fas fa-couch' },
-            { id: 'table', name: 'Masă', icon: 'fas fa-table' },
-            { id: 'chair', name: 'Scaun', icon: 'fas fa-chair' },
-            { id: 'bed', name: 'Pat', icon: 'fas fa-bed' },
-            { id: 'desk', name: 'Birou', icon: 'fas fa-desktop' },
-            { id: 'lamp', name: 'Lampă', icon: 'fas fa-lightbulb' },
-            { id: 'shelf', name: 'Raft', icon: 'fas fa-th-large' },
-            { id: 'plant', name: 'Plantă', icon: 'fas fa-leaf' },
-            { id: 'rug', name: 'Covor', icon: 'fas fa-square' },
-            { id: 'art', name: 'Artă Perete', icon: 'fas fa-image' },
-            { id: 'tv', name: 'TV', icon: 'fas fa-tv' },
-            { id: 'closet', name: 'Dulap', icon: 'fas fa-archive' }
-        ];
+        const furnitureTemplates = {
+            'Door': { ifc_class: 'IfcDoor', dimensions: { length: 0.0, width: 0.4 }, height: 2.1, position: { x: 0.0, y: 0.0 } },
+            'Window': { ifc_class: 'IfcWindow', dimensions: { length: 0.1, width: 1.7 }, height: 1.5, position: { x: 3.1, y: 0.7 } },
+            'Bed': { ifc_class: 'IfcFurniture', dimensions: { length: 1.6, width: 0.6 }, height: 0.5, position: { x: 1.4, y: 2.5 } },
+            'Desk': { ifc_class: 'IfcFurniture', dimensions: { length: 1.1, width: 0.3 }, height: 0.75, position: { x: 2.1, y: 0.0 } },
+            'Chair': { ifc_class: 'IfcFurniture', dimensions: { length: 0.5, width: 0.4 }, height: 0.9, position: { x: 2.4, y: 0.3 } },
+            'Wardrobe': { ifc_class: 'IfcFurniture', dimensions: { length: 1.2, width: 0.4 }, height: 2.1, position: { x: 0.2, y: 2.7 } },
+            'Bookcase': { ifc_class: 'IfcFurniture', dimensions: { length: 0.2, width: 1.6 }, height: 2.0, position: { x: 0.0, y: 1.5 } },
+            'Nightstand': { ifc_class: 'IfcFurniture', dimensions: { length: 0.6, width: 0.4 }, height: 0.7, position: { x: 1.2, y: 0.0 } },
+            'Plants': { ifc_class: 'IfcFurniture', dimensions: { length: 0.1, width: 1.7 }, height: 1.0, position: { x: 3.0, y: 0.7 } },
+            'Sofa': { ifc_class: 'IfcFurniture', dimensions: { length: 2.0, width: 0.8 }, height: 0.8, position: { x: 1.0, y: 1.0 } },
+            'Table': { ifc_class: 'IfcFurniture', dimensions: { length: 1.2, width: 0.6 }, height: 0.75, position: { x: 1.5, y: 1.5 } }
+        };
         
         const roomIcons = {
             'living': 'fas fa-couch',
@@ -586,66 +793,124 @@
             'dining': 'fas fa-utensils'
         };
         
-        const sizeLabels = {
-            1: 'Mică',
-            2: 'Medie',
-            3: 'Mare'
-        };
+        // Mobiliere inițiale
+        let furnitureItems = [
+            { type: 'Door', ifc_class: 'IfcDoor', position: { x: 0.0, y: 0.0 }, dimensions: { length: 0.0, width: 0.4 }, height: 2.1 },
+            { type: 'Bookcase', ifc_class: 'IfcFurniture', position: { x: 0.0, y: 1.5 }, dimensions: { length: 0.2, width: 1.6 }, height: 2.0 },
+            { type: 'Wardrobe', ifc_class: 'IfcFurniture', position: { x: 0.2, y: 2.7 }, dimensions: { length: 1.2, width: 0.4 }, height: 2.1 },
+            { type: 'Bed', ifc_class: 'IfcFurniture', position: { x: 1.4, y: 2.5 }, dimensions: { length: 1.6, width: 0.6 }, height: 0.5 },
+            { type: 'Window', ifc_class: 'IfcWindow', position: { x: 3.1, y: 0.7 }, dimensions: { length: 0.1, width: 1.7 }, height: 1.5 },
+            { type: 'Plants', ifc_class: 'IfcFurniture', position: { x: 3.0, y: 0.7 }, dimensions: { length: 0.1, width: 1.7 }, height: 1.0 },
+            { type: 'Desk', ifc_class: 'IfcFurniture', position: { x: 2.1, y: 0.0 }, dimensions: { length: 1.1, width: 0.3 }, height: 0.75 },
+            { type: 'Chair', ifc_class: 'IfcFurniture', position: { x: 2.4, y: 0.3 }, dimensions: { length: 0.5, width: 0.4 }, height: 0.9 },
+            { type: 'Nightstand', ifc_class: 'IfcFurniture', position: { x: 1.2, y: 0.0 }, dimensions: { length: 0.6, width: 0.4 }, height: 0.7 }
+        ];
         
         // Starea aplicației
-        let selectedFurniture = ['sofa', 'table'];
-        let promptHistory = JSON.parse(localStorage.getItem('roomPromptHistory')) || [];
+        let promptHistory = JSON.parse(localStorage.getItem('roomJSONHistory')) || [];
         
         // Inițializare la încărcarea paginii
         document.addEventListener('DOMContentLoaded', function() {
-            initFurnitureGrid();
+            initFurnitureList();
             initEventListeners();
             updateRoomPreview();
-            generatePrompt();
+            generateJSON();
             updateHistoryPanel();
+            
+            // Setează tab-urile
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    
+                    // Remove active class from all tabs and contents
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to current tab and content
+                    this.classList.add('active');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
         });
         
-        // Inițializează grid-ul de mobilier
-        function initFurnitureGrid() {
-            const grid = document.getElementById('furnitureGrid');
-            grid.innerHTML = '';
-            
-            furnitureItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = `furniture-item ${selectedFurniture.includes(item.id) ? 'selected' : ''}`;
-                div.dataset.id = item.id;
-                div.innerHTML = `
-                    <i class="${item.icon}"></i>
-                    <span>${item.name}</span>
-                `;
-                div.addEventListener('click', () => toggleFurniture(item.id));
-                grid.appendChild(div);
-            });
+        // Inițializează lista de mobilier
+        function initFurnitureList() {
+            updateFurnitureList();
         }
         
-        // Comută selecția mobilierului
-        function toggleFurniture(furnitureId) {
-            const index = selectedFurniture.indexOf(furnitureId);
-            if (index === -1) {
-                selectedFurniture.push(furnitureId);
-            } else {
-                if (selectedFurniture.length > 2) {
-                    selectedFurniture.splice(index, 1);
-                } else {
-                    showNotification('Selectează minim 2 elemente de mobilier!', 'warning');
-                    return;
-                }
-            }
+        // Actualizează lista de mobilier în UI
+        function updateFurnitureList() {
+            const list = document.getElementById('furnitureList');
+            list.innerHTML = '';
             
-            // Actualizează UI
-            document.querySelectorAll('.furniture-item').forEach(item => {
-                if (item.dataset.id === furnitureId) {
-                    item.classList.toggle('selected');
-                }
+            furnitureItems.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'furniture-config-item';
+                div.innerHTML = `
+                    <div class="furniture-config-header">
+                        <strong>${item.type}</strong>
+                        <button class="remove-furniture" data-index="${index}">
+                            <i class="fas fa-times"></i> Elimină
+                        </button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                        <div>
+                            <label>Poziție X</label>
+                            <input type="number" class="furniture-pos-x" data-index="${index}" value="${item.position.x}" step="0.1" min="0">
+                        </div>
+                        <div>
+                            <label>Poziție Y</label>
+                            <input type="number" class="furniture-pos-y" data-index="${index}" value="${item.position.y}" step="0.1" min="0">
+                        </div>
+                        <div>
+                            <label>Lungime</label>
+                            <input type="number" class="furniture-length" data-index="${index}" value="${item.dimensions.length}" step="0.1" min="0">
+                        </div>
+                        <div>
+                            <label>Lățime</label>
+                            <input type="number" class="furniture-width" data-index="${index}" value="${item.dimensions.width}" step="0.1" min="0">
+                        </div>
+                        <div>
+                            <label>Înălțime</label>
+                            <input type="number" class="furniture-height" data-index="${index}" value="${item.height}" step="0.1" min="0">
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
             });
             
-            updateRoomPreview();
-            generatePrompt();
+            // Adaugă event listeners pentru input-urile de mobilier
+            document.querySelectorAll('.remove-furniture').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    furnitureItems.splice(index, 1);
+                    updateFurnitureList();
+                    updateRoomPreview();
+                    generateJSON();
+                });
+            });
+            
+            document.querySelectorAll('.furniture-pos-x, .furniture-pos-y, .furniture-length, .furniture-width, .furniture-height').forEach(input => {
+                input.addEventListener('input', function() {
+                    const index = parseInt(this.dataset.index);
+                    const field = this.className.replace('furniture-', '');
+                    
+                    if (field === 'pos-x') {
+                        furnitureItems[index].position.x = parseFloat(this.value);
+                    } else if (field === 'pos-y') {
+                        furnitureItems[index].position.y = parseFloat(this.value);
+                    } else if (field === 'length') {
+                        furnitureItems[index].dimensions.length = parseFloat(this.value);
+                    } else if (field === 'width') {
+                        furnitureItems[index].dimensions.width = parseFloat(this.value);
+                    } else if (field === 'height') {
+                        furnitureItems[index].height = parseFloat(this.value);
+                    }
+                    
+                    updateRoomPreview();
+                    generateJSON();
+                });
+            });
         }
         
         // Inițializează event listeners
@@ -653,32 +918,46 @@
             // Controale design
             document.getElementById('roomType').addEventListener('change', updateRoomPreview);
             document.getElementById('style').addEventListener('change', updateRoomPreview);
-            document.getElementById('colorScheme').addEventListener('input', updateRoomPreview);
+            document.getElementById('roomId').addEventListener('input', updateRoomPreview);
+            document.getElementById('roomName').addEventListener('input', updateRoomPreview);
             document.getElementById('lighting').addEventListener('change', updateRoomPreview);
-            document.getElementById('size').addEventListener('input', updateRoomPreview);
-            document.getElementById('mood').addEventListener('change', updateRoomPreview);
+            document.getElementById('description').addEventListener('input', updateRoomPreview);
+            document.getElementById('roomLength').addEventListener('input', updateRoomPreview);
+            document.getElementById('roomWidth').addEventListener('input', updateRoomPreview);
+            document.getElementById('roomHeight').addEventListener('input', updateRoomPreview);
+            document.getElementById('roomShape').addEventListener('change', updateRoomPreview);
+            
+            // Buton adăugare mobilier
+            document.getElementById('addFurnitureBtn').addEventListener('click', addFurniture);
             
             // Butoane acțiuni
-            document.getElementById('copyBtn').addEventListener('click', copyPrompt);
-            document.getElementById('generateBtn').addEventListener('click', generatePrompt);
+            document.getElementById('copyBtn').addEventListener('click', copyJSON);
+            document.getElementById('generateBtn').addEventListener('click', generateJSON);
+        }
+        
+        // Adaugă mobilier nou
+        function addFurniture() {
+            const type = document.getElementById('newFurnitureType').value;
+            const template = furnitureTemplates[type];
             
-            // Actualizează valoarea dimensiunii
-            document.getElementById('size').addEventListener('input', function() {
-                document.getElementById('sizeValue').textContent = sizeLabels[this.value];
+            if (template) {
+                // Generează o poziție unică
+                const newPosition = {
+                    x: parseFloat((Math.random() * 2).toFixed(1)),
+                    y: parseFloat((Math.random() * 2).toFixed(1))
+                };
+                
+                furnitureItems.push({
+                    type: type,
+                    ifc_class: template.ifc_class,
+                    position: newPosition,
+                    dimensions: { ...template.dimensions },
+                    height: template.height
+                });
+                
+                updateFurnitureList();
                 updateRoomPreview();
-                generatePrompt();
-            });
-            
-            // Actualizează previzualizarea culorii
-            document.getElementById('colorScheme').addEventListener('input', function() {
-                document.getElementById('colorPreview').style.background = this.value;
-                updateRoomPreview();
-                generatePrompt();
-            });
-            
-            // Ascunde panoul istoric dacă nu există date
-            if (promptHistory.length === 0) {
-                document.getElementById('historyPanel').style.display = 'none';
+                generateJSON();
             }
         }
         
@@ -686,10 +965,12 @@
         function updateRoomPreview() {
             const roomType = document.getElementById('roomType').value;
             const style = document.getElementById('style').value;
-            const color = document.getElementById('colorScheme').value;
-            const lighting = document.getElementById('lighting').value;
-            const size = document.getElementById('size').value;
-            const mood = document.getElementById('mood').value;
+            const roomId = document.getElementById('roomId').value;
+            const roomName = document.getElementById('roomName').value;
+            const length = document.getElementById('roomLength').value;
+            const width = document.getElementById('roomWidth').value;
+            const height = document.getElementById('roomHeight').value;
+            const shape = document.getElementById('roomShape').value;
             
             // Actualizează iconița
             document.getElementById('roomIcon').className = `fas ${roomIcons[roomType]} room-icon`;
@@ -706,6 +987,7 @@
             
             const styleNames = {
                 'modern': 'Modern',
+                'classical': 'Clasic',
                 'scandinavian': 'Scandinavian',
                 'industrial': 'Industrial',
                 'bohemian': 'Bohemian',
@@ -717,130 +999,137 @@
                 `${roomNames[roomType]} ${styleNames[style]}`;
             
             // Actualizează detaliile
-            const selectedFurnitureNames = selectedFurniture.map(id => 
-                furnitureItems.find(item => item.id === id).name
-            );
-            
             document.getElementById('roomDetails').innerHTML = `
+                <div class="detail-item">
+                    <strong>ID:</strong> ${roomId}
+                </div>
+                <div class="detail-item">
+                    <strong>Dimensiuni:</strong> ${length}m × ${width}m × ${height}m
+                </div>
+                <div class="detail-item">
+                    <strong>Formă:</strong> ${shape}
+                </div>
+                <div class="detail-item">
+                    <strong>Mobilier:</strong> ${furnitureItems.length} elemente
+                </div>
                 <div class="detail-item">
                     <strong>Stil:</strong> ${styleNames[style]}
                 </div>
                 <div class="detail-item">
-                    <strong>Culoare:</strong> ${color.toUpperCase()}
-                </div>
-                <div class="detail-item">
-                    <strong>Iluminat:</strong> ${lighting}
-                </div>
-                <div class="detail-item">
-                    <strong>Dimensiune:</strong> ${sizeLabels[size]}
-                </div>
-                <div class="detail-item">
-                    <strong>Mobilier:</strong> ${selectedFurnitureNames.slice(0, 3).join(', ')}${selectedFurnitureNames.length > 3 ? '...' : ''}
-                </div>
-                <div class="detail-item">
-                    <strong>Atmosferă:</strong> ${mood}
+                    <strong>Iluminat:</strong> ${document.getElementById('lighting').value}
                 </div>
             `;
         }
         
-        // Generează promptul
-        function generatePrompt() {
+        // Generează JSON-ul
+        function generateJSON() {
             const roomType = document.getElementById('roomType').value;
             const style = document.getElementById('style').value;
-            const color = document.getElementById('colorScheme').value;
+            const roomId = document.getElementById('roomId').value;
+            const roomName = document.getElementById('roomName').value;
+            const description = document.getElementById('description').value;
+            const length = parseFloat(document.getElementById('roomLength').value);
+            const width = parseFloat(document.getElementById('roomWidth').value);
+            const height = parseFloat(document.getElementById('roomHeight').value);
+            const shape = document.getElementById('roomShape').value;
             const lighting = document.getElementById('lighting').value;
-            const size = document.getElementById('size').value;
-            const mood = document.getElementById('mood').value;
             
-            const selectedFurnitureNames = selectedFurniture.map(id => 
-                furnitureItems.find(item => item.id === id).name
-            );
-            
-            // Mapează valorile pentru prompt
-            const roomNames = {
-                'living': 'living room',
-                'bedroom': 'bedroom',
-                'kitchen': 'kitchen',
-                'bathroom': 'bathroom',
-                'office': 'home office',
-                'dining': 'dining room'
+            // Construiește obiectul JSON
+            const jsonConfig = {
+                project_information: {
+                    schema: "IFC-aligned spatial configuration",
+                    version: "1.0",
+                    unit: "meters"
+                },
+                space: {
+                    id: roomId,
+                    name: roomName,
+                    description: description,
+                    shape: shape,
+                    dimensions: {
+                        length: length,
+                        width: width,
+                        height: height
+                    },
+                    style: style,
+                    furniture_placement_requirements: [
+                        "All objects must be positioned exactly according to provided coordinates",
+                        "All objects must maintain exact specified dimensions",
+                        "Rotation values must be applied precisely where specified",
+                        "Object positions are relative to room origin (0,0) at bottom-left corner"
+                    ],
+                    furniture: furnitureItems.map(item => ({
+                        type: item.type,
+                        ifc_class: item.ifc_class,
+                        position: item.position,
+                        dimensions: item.dimensions,
+                        height: item.height
+                    })),
+                    metadata: {
+                        lighting: lighting,
+                        coordinate_system: "Cartesian (x,y) with origin at room corner",
+                        scale: "1 unit = 1 meter"
+                    }
+                },
+                visualization_instructions: {
+                    task: `Generate a photorealistic 3D rendering of ${roomId}`,
+                    requirements: [
+                        "Viewpoint showing overall room layout",
+                        "Maintain exact spatial positioning of all objects as specified",
+                        "Maintain precise dimensional accuracy of all objects",
+                        `Apply ${style} architectural style consistently`,
+                        `Ensure ${lighting} lighting conditions as specified`
+                    ]
+                }
             };
             
-            const styleKeywords = {
-                'modern': 'modern, contemporary, sleek lines, minimalist decor',
-                'scandinavian': 'Scandinavian design, light wood, hygge, functional, airy',
-                'industrial': 'industrial style, exposed brick, metal accents, raw materials',
-                'bohemian': 'bohemian style, eclectic, colorful textiles, plants, layered patterns',
-                'traditional': 'traditional, classic furniture, rich fabrics, warm tones',
-                'minimalist': 'minimalist, clean lines, uncluttered, functional, monochromatic'
-            };
-            
-            const lightingKeywords = {
-                'natural': 'natural daylight streaming through large windows',
-                'warm': 'warm ambient lighting, cozy evening atmosphere',
-                'bright': 'bright studio lighting, well-lit, professional photography lighting',
-                'moody': 'moody atmospheric lighting, dramatic shadows, accent lighting'
-            };
-            
-            const moodKeywords = {
-                'cozy': 'cozy and comfortable atmosphere, inviting space',
-                'elegant': 'elegant and sophisticated, luxurious feel',
-                'energetic': 'energetic and vibrant, dynamic space',
-                'calm': 'calm and relaxing, tranquil environment'
-            };
-            
-            // Construiește promptul
-            const prompt = `
-Render interior design profesionist pentru o cameră ${roomNames[roomType]}.
-
-SPECIFICAȚII DESIGN:
-- Stil: ${styleKeywords[style]}
-- Schema de culori: Dominantă ${color.toUpperCase()} cu accente complementare
-- Iluminat: ${lightingKeywords[lighting]}
-- Dimensiune cameră: ${sizeLabels[size].toLowerCase()}, spațioasă
-- Atmosferă: ${moodKeywords[mood]}
-- Mobilier principal: ${selectedFurnitureNames.join(', ')}
-
-CERINȚE PROFESIONALE:
-- Calitate fotorealistică, 8K rezoluție
-- Iluminat profesional de studio
-- Texturi detaliate și materiale realiste
-- Unghi larg (24mm) pentru perspectiva camerei
-- Compoziție armonioasă, fără elemente distorsionate
-- Fără text sau etichete în imagine
-- Calitate revistă de design interior (Architectural Digest, Elle Decor)
-
-TECHNICAL SPECIFICATIONS:
-- Aspect ratio: 16:9
-- Style: vivid
-- Quality: hd
-`;
-
-            // Afișează promptul
-            document.getElementById('promptDisplay').textContent = prompt;
+            // Formatează și afișează JSON-ul
+            const jsonString = JSON.stringify(jsonConfig, null, 2);
+            const formattedJSON = syntaxHighlight(jsonString);
+            document.getElementById('promptDisplay').innerHTML = formattedJSON;
             
             // Salvează în istoric
-            saveToHistory(prompt);
+            saveToHistory(jsonConfig);
             
-            return prompt;
+            return jsonConfig;
         }
         
-        // Copiază promptul în clipboard
-        async function copyPrompt() {
-            const prompt = document.getElementById('promptDisplay').textContent;
+        // Evidențierea sintaxei JSON
+        function syntaxHighlight(json) {
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+        
+        // Copiază JSON în clipboard
+        async function copyJSON() {
+            const jsonString = JSON.stringify(JSON.parse(document.getElementById('promptDisplay').textContent || document.getElementById('promptDisplay').innerText), null, 2);
             
             try {
-                await navigator.clipboard.writeText(prompt);
-                showNotification('Prompt copiat în clipboard!');
+                await navigator.clipboard.writeText(jsonString);
+                showNotification('JSON copiat în clipboard!');
             } catch (err) {
                 // Fallback pentru browsere vechi
                 const textArea = document.createElement('textarea');
-                textArea.value = prompt;
+                textArea.value = jsonString;
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                showNotification('Prompt copiat în clipboard!');
+                showNotification('JSON copiat în clipboard!');
             }
         }
         
@@ -867,33 +1156,29 @@ TECHNICAL SPECIFICATIONS:
             }, 3000);
         }
         
-        // Salvează prompt în istoric
-        function saveToHistory(prompt) {
-            const designSpecs = {
-                roomType: document.getElementById('roomType').value,
-                style: document.getElementById('style').value,
-                color: document.getElementById('colorScheme').value,
-                timestamp: new Date().toISOString()
-            };
-            
+        // Salvează configurație în istoric
+        function saveToHistory(jsonConfig) {
             const historyItem = {
                 id: Date.now(),
-                prompt: prompt.substring(0, 150) + '...',
-                fullPrompt: prompt,
-                specs: designSpecs,
-                date: new Date().toLocaleDateString('ro-RO')
+                name: jsonConfig.space.name,
+                roomId: jsonConfig.space.id,
+                style: jsonConfig.space.style,
+                furnitureCount: jsonConfig.space.furniture.length,
+                timestamp: new Date().toISOString(),
+                date: new Date().toLocaleDateString('ro-RO'),
+                config: jsonConfig
             };
             
             // Adaugă la începutul listei
             promptHistory.unshift(historyItem);
             
-            // Păstrează maxim 10 intrări
-            if (promptHistory.length > 10) {
-                promptHistory = promptHistory.slice(0, 10);
+            // Păstrează maxim 8 intrări
+            if (promptHistory.length > 8) {
+                promptHistory = promptHistory.slice(0, 8);
             }
             
             // Salvează în localStorage
-            localStorage.setItem('roomPromptHistory', JSON.stringify(promptHistory));
+            localStorage.setItem('roomJSONHistory', JSON.stringify(promptHistory));
             
             // Actualizează UI
             updateHistoryPanel();
@@ -916,43 +1201,53 @@ TECHNICAL SPECIFICATIONS:
                 const div = document.createElement('div');
                 div.className = 'history-item';
                 div.innerHTML = `
-                    <strong>${getRoomName(item.specs.roomType)} - ${getStyleName(item.specs.style)}</strong>
-                    <p style="margin: 5px 0; font-size: 0.85rem; color: var(--gray);">${item.prompt}</p>
+                    <strong>${item.roomId} - ${item.name}</strong>
+                    <p style="margin: 5px 0; font-size: 0.85rem; color: var(--gray);">
+                        Stil: ${item.style} | Mobilier: ${item.furnitureCount} elemente
+                    </p>
                     <small><i class="far fa-clock"></i> ${item.date}</small>
                 `;
                 
                 div.addEventListener('click', () => {
-                    document.getElementById('promptDisplay').textContent = item.fullPrompt;
-                    showNotification('Prompt încărcat din istoric!');
+                    loadFromHistory(item);
+                    showNotification('Configurație încărcată din istoric!');
                 });
                 
                 historyList.appendChild(div);
             });
         }
         
-        // Funcții helper
-        function getRoomName(key) {
-            const names = {
-                'living': 'Living',
-                'bedroom': 'Dormitor',
-                'kitchen': 'Bucătărie',
-                'bathroom': 'Baie',
-                'office': 'Birou',
-                'dining': 'Sufragerie'
-            };
-            return names[key] || key;
+        // Încarcă configurație din istoric
+        function loadFromHistory(item) {
+            const config = item.config;
+            
+            // Setează valorile din configurație
+            document.getElementById('roomType').value = getKeyByValue(roomIcons, config.space.id.includes('bedroom') ? 'fas fa-bed' : 
+                config.space.id.includes('living') ? 'fas fa-couch' : 
+                config.space.id.includes('kitchen') ? 'fas fa-utensils' : 'fas fa-bed');
+            
+            document.getElementById('style').value = config.space.style;
+            document.getElementById('roomId').value = config.space.id;
+            document.getElementById('roomName').value = config.space.name;
+            document.getElementById('description').value = config.space.description;
+            document.getElementById('roomLength').value = config.space.dimensions.length;
+            document.getElementById('roomWidth').value = config.space.dimensions.width;
+            document.getElementById('roomHeight').value = config.space.dimensions.height;
+            document.getElementById('roomShape').value = config.space.shape;
+            document.getElementById('lighting').value = config.space.metadata.lighting;
+            
+            // Actualizează mobilierele
+            furnitureItems = config.space.furniture;
+            updateFurnitureList();
+            
+            // Actualizează previzualizarea și generează JSON
+            updateRoomPreview();
+            generateJSON();
         }
         
-        function getStyleName(key) {
-            const names = {
-                'modern': 'Modern',
-                'scandinavian': 'Scandinavian',
-                'industrial': 'Industrial',
-                'bohemian': 'Bohemian',
-                'traditional': 'Traditional',
-                'minimalist': 'Minimalist'
-            };
-            return names[key] || key;
+        // Funcție helper pentru a obține cheia după valoare
+        function getKeyByValue(object, value) {
+            return Object.keys(object).find(key => object[key] === value);
         }
     </script>
 </body>
