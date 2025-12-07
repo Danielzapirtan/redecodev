@@ -1,0 +1,41 @@
+{
+	"room_description": {
+		"id": "room_20251207_001",
+		"name": "Bedroom 001",
+		"description": "User's bedroom",
+		"items": {
+			{
+				"type": "Door",
+				"align": "west-southwest",
+			},
+			{
+				"type": "Bookcase",
+				"align": "west-northwest"
+			},
+			{
+				"type": "Wardrobe",
+				"align": "north"
+			},
+			{
+				"type": "Bed",
+				"align": "north-northeast"
+			},
+			{
+				"type": "Window",
+				"type": "Plants",
+				"align": "east"
+			},
+			{
+				"type": "Desk",
+				"type": "Chair",
+				"align": south-southeast"
+			},
+			{
+				"type": "Nightstand",
+				"align": "south"
+			}
+		}
+	},
+	"role": "image generator",
+	"task": "generate a 3d image of room_20251207_001 as if virtual camera was oriented towards east"
+}
