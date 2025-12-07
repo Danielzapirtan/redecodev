@@ -15,7 +15,7 @@
 			{
 				"type": "Bookcase",
 				"align": "west-northwest",
-				"display": "none"
+				"display": "block"
 			},
 			{
 				"type": "Wardrobe",
@@ -37,15 +37,15 @@
 				"type": "Desk",
 				"type": "Chair",
 				"align": south-southeast",
-				"display": "block"
+				"display": "none"
 			},
 			{
 				"type": "Nightstand",
 				"align": "south",
-				"display": "block"
+				"display": "none"
 			}
 		}
 	},
 	"role": "image generator",
-	"task": "generate a 3d image of room_20251207_001 as if virtual camera was oriented towards east"
+	"task": "generate a 3d image of room_20251207_001 as if virtual camera is oriented towards north"
 }
