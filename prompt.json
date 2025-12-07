@@ -21,7 +21,10 @@
       }
     },
     "role": "image generator",
-    "task": "please generate a realistic panoramic 3d image of bedroom_002"
+    "task": "please generate a realistic panoramic 3d image of bedroom_002",
+    "constraints": [
+      "Only one side has a window"
+    ]
   }
 }
 
