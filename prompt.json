@@ -1,7 +1,7 @@
 {
   "prompt": {
     "room": {
-      "id": "bedroom_002",
+      "id": "bedroom_003",
       "name": "bedroom",
       "description": "bedroom layout",
       "shape": "rectangular",
@@ -21,9 +21,10 @@
       }
     },
     "role": "image generator",
-    "task": "please generate a realistic panoramic 3d image of bedroom_002",
+    "task": "please generate a realistic panoramic 3d image of bedroom_003",
     "constraints": [
-      "Only one side has a window"
+      "Only one side has a window",
+      "Camera should be placed in front of the door, seing all the room"
     ]
   }
 }
