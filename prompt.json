@@ -49,7 +49,7 @@
         "position": {"x": 1.4, "y": 2.5},
         "dimensions": {"length": 1.6, "width": 0.6},
         "height": 0.5,
-        "rotation": 0
+        "rotation": 90
       },
       {
         "type": "Window",
