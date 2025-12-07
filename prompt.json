@@ -3,6 +3,9 @@
 		"id": "room_20251207_001",
 		"name": "Bedroom 001",
 		"description": "User's bedroom",
+		"shape": "rectangular",
+		"dimensions": [ 3.2, 3.1, 2.2 ],
+		"style": "Romanian minimal",
 		"items": {
 			{
 				"type": "Door",
