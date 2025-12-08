@@ -36,7 +36,7 @@
 			{
 				"type": "Desk",
 				"type": "Chair",
-				"align": south-southeast",
+				"align": "south-southeast",
 				"display": "block"
 			},
 			{
