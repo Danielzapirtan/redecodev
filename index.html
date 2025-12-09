@@ -813,11 +813,11 @@ Room Information:
                 const command = parts[0].toLowerCase();
                 const args = parts.slice(1) || [];
                 
-                if (this.cliCommands[command]) {
+                //if (this.cliCommands[command]) {
                     this.cliCommands[command](args);
-                } else {
+                /*} else {
                     this.cliOutput(`Unknown command: ${command}. Type 'help' for available commands.`, 'error');
-                }
+                }*/
             }
             
             cliOutput(message, type = 'info') {
