@@ -47,5 +47,4 @@
 		}
 	},
 	"role": "image generator",
-	"task": "generate a 3d image of room_20251209_001 as if virtual camera is oriented towards south; Hint: window should be in the left of the image."
-}
+	"task": "generate a 3d image of room_20251209_001 as if virtual camera is oriented towards south; respect orientation indications"
