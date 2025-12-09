@@ -822,9 +822,15 @@ Room Information:
             
             cliOutput(message, type = 'info') {
                 const log = document.querySelector('.log');
+                if (!log) {
+                  alert('no log!');
+                }
                 const entry = document.createElement('div');
+                if (!entry) {
+                  alert('no entry!');
+                }
                 entry.className = `log-entry log-${type}`;
-                entry.innerHTML = `${message}`;
+                entry.innerHTML = `${message.trim()}`;
                 log.appendChild(entry);
                 log.scrollTop = log.scrollHeight;
             }
