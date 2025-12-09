@@ -1,11 +1,11 @@
 {
 	"room_description": {
-		"id": "room_20251207_001",
+		"id": "room_20251209_001",
 		"name": "Bedroom 001",
 		"description": "User's bedroom",
 		"shape": "rectangular",
 		"dimensions": [ 3.2, 3.1, 2.2 ],
-		"style": "Romanian minimal",
+		"style": "Feng Shui",
 		"items": {
 			{
 				"type": "Door",
@@ -47,5 +47,5 @@
 		}
 	},
 	"role": "image generator",
-	"task": "generate a 3d image of room_20251207_001 as if virtual camera is oriented towards south"
+	"task": "generate a 3d image of room_20251209_001 as if virtual camera is oriented towards south"
 }
