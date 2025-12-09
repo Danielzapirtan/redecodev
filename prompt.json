@@ -8,14 +8,8 @@
 		"style": "Creative",
 		"items": {
 			{
-				"type": "Door",
-				"align": "west-southwest",
-        "position": "2.0"
-			},
-			{
-				"type": "Door",
-				"align": "south-southwest",
-        "position": "3.0"
+				"type": "2 Doors",
+				"align": ["west-southwest", "south-southwest"]
 			},
 			{
 				"type": "L-shaped sofa",
