@@ -812,7 +812,7 @@ Room Information:
                 const parts = cmd.split(' ');
                 const command = parts[0].toLowerCase();
                 const args = parts.slice(1) || [];
-                
+                alert(cmd);
                 //if (this.cliCommands[command]) {
                     this.cliCommands[command](args);
                 /*} else {
@@ -822,18 +822,11 @@ Room Information:
             
             cliOutput(message, type = 'info') {
                 const log = document.querySelector('.log');
-                if (!log) {
-                  alert('no log!');
-                }
                 const entry = document.createElement('div');
-                if (!entry) {
-                  alert('no entry!');
-                }
                 entry.className = `log-entry log-${type}`;
                 entry.innerHTML = `${message.trim()}`;
                 log.appendChild(entry);
                 log.scrollTop = log.scrollHeight;
-                alert(message.trim());
             }
             
             // Prompt Engineering Functions
