@@ -803,23 +803,24 @@ Room Information:
                 });
             }
             
-            executeCLICommand(cmd) {
-                if (!cmd) return;
-                
-                // Add to history
-                this.commandHistory.push(cmd);
-                this.cliOutput(`> ${cmd}`, 'cmd');
-                
-                const parts = cmd.split(' ');
-                const command = parts[0].toLowerCase();
-                const args = parts.slice(1) || [];
-                if (this.cliCommands[command]) {
-                    this.cliCommands[command](args);
-                } else {
-                    this.cliOutput(`Unknown command: ${command}. Type 'help' for available commands.`, 'error');
-                }*/
-            }
-            
+executeCLICommand(cmd) {
+    if (!cmd) return;
+    
+    // Add to history
+    this.commandHistory.push(cmd);
+    this.cliOutput(`> ${cmd}`, 'cmd');
+    
+    const parts = cmd.split(' ');
+    const command = parts[0].toLowerCase();
+    const args = parts.slice(1);
+    
+    if (this.cliCommands[command]) {
+        this.cliCommands[command](args);
+    } else {
+        this.cliOutput(`Unknown command: ${command}. Type 'help' for available commands.`, 'error');
+    }
+}
+
             cliOutput(message, type = 'info') {
                 const log = document.querySelector('.log');
                 const entry = document.createElement('div');
