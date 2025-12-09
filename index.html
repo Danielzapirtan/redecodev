@@ -1,289 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room Designer CLI Web App</title>
-    <style>
-        body {
-            font-family: monospace;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #cli-container {
-            width: 800px;
-            height: 400px;
-            background-color: #000;
-            color: #0f0;
-            padding: 10px;
-            overflow-y: scroll;
-            border: 1px solid #333;
-            margin-bottom: 20px;
-        }
-        #cli-output {
-            white-space: pre-wrap;
-        }
-        #cli-input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: #0f0;
-            font-family: monospace;
-            outline: none;
-        }
-        #canvas-container {
-            border: 1px solid #333;
-            margin-bottom: 20px;
-        }
-        #prompt-output {
-            width: 800px;
-            height: 200px;
-            background-color: #fff;
-            border: 1px solid #333;
-            padding: 10px;
-            overflow-y: scroll;
-            white-space: pre-wrap;
-        }
-        canvas {
-            background-color: #fff;
-        }
-    </style>
+<meta charset="UTF-8" />
+<title>CLI Room Designer + Gemini Prompt Generator</title>
+<style>
+    body { 
+        font-family: monospace; 
+        display: flex; 
+        margin: 0; 
+        height: 100vh;
+        background: #111;
+        color: #0f0;
+    }
+    #left {
+        width: 350px;
+        padding: 10px;
+        border-right: 2px solid #0f0;
+        display: flex;
+        flex-direction: column;
+    }
+    #terminal {
+        flex: 1;
+        background: black;
+        padding: 10px;
+        overflow-y: auto;
+        border: 1px solid #0f0;
+        white-space: pre-wrap;
+    }
+    #input {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-top: 1px solid #0f0;
+        background: #000;
+        color: #0f0;
+        font-family: monospace;
+    }
+    #canvas {
+        flex: 1;
+        background: #222;
+    }
+</style>
 </head>
 <body>
-    <h1>Room Designer CLI</h1>
-    <p>Type commands in the CLI below. Use 'help' for command list.</p>
-    <div id="cli-container">
-        <div id="cli-output"></div>
-        <span>$ </span><input type="text" id="cli-input" autofocus>
-    </div>
-    <div id="canvas-container">
-        <canvas id="room-canvas" width="600" height="400"></canvas>
-    </div>
-    <div id="prompt-output">Generated prompt will appear here...</div>
 
-    <script>
-        // Room model
-        let room = {
-            width: 600,
-            height: 400,
-            furniture: [] // {id: number, type: string, x: number, y: number, width: number, height: number, rotation: number}
-        };
-        let nextId = 1;
+<div id="left">
+    <div id="terminal"></div>
+    <input id="input" placeholder="Type command (help)" autofocus />
+</div>
 
-        // Predefined furniture sizes (in pixels, assuming canvas scale)
-        const furnitureTypes = {
-            chair: {width: 50, height: 50},
-            table: {width: 100, height: 60},
-            bed: {width: 150, height: 200},
-            sofa: {width: 150, height: 80},
-            lamp: {width: 30, height: 30},
-            shelf: {width: 100, height: 30}
-            // Add more as needed
-        };
+<canvas id="canvas" width="900" height="800"></canvas>
 
-        // CLI elements
-        const cliOutput = document.getElementById('cli-output');
-        const cliInput = document.getElementById('cli-input');
-        const canvas = document.getElementById('room-canvas');
-        const ctx = canvas.getContext('2d');
-        const promptOutput = document.getElementById('prompt-output');
+<script>
+// ----------------------------
+// State
+// ----------------------------
+const terminal = document.getElementById("terminal");
+const input = document.getElementById("input");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-        // Draw the room and furniture
-        function drawRoom() {
-            ctx.clearRect(0, 0, room.width, room.height);
-            // Draw room boundaries
-            ctx.strokeRect(0, 0, room.width, room.height);
+let furniture = [];
+let room = { width: 900, height: 800 };
 
-            // Draw furniture
-            room.furniture.forEach(item => {
-                ctx.save();
-                ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
-                ctx.rotate(item.rotation * Math.PI / 180);
-                ctx.fillStyle = '#888';
-                ctx.fillRect(-item.width / 2, -item.height / 2, item.width, item.height);
-                ctx.fillStyle = '#000';
-                ctx.font = '12px monospace';
-                ctx.fillText(item.type, -item.width / 2 + 5, 0);
-                ctx.restore();
+// ----------------------------
+// CLI Output Helper
+// ----------------------------
+function log(msg) {
+    terminal.textContent += msg + "\n";
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+// ----------------------------
+// Drawing
+// ----------------------------
+function draw() {
+    ctx.fillStyle = "#222";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw furniture
+    furniture.forEach(f => {
+        ctx.fillStyle = f.color;
+        ctx.fillRect(f.x, f.y, f.w, f.h);
+        ctx.fillStyle = "#fff";
+        ctx.fillText(f.name, f.x + 4, f.y + 14);
+    });
+}
+
+// ----------------------------
+// Commands
+// ----------------------------
+function execute(cmd) {
+    const parts = cmd.trim().split(/\s+/);
+    const c = parts[0];
+
+    switch(c) {
+
+        case "help":
+            log(`Commands:
+  add <name> <x> <y> <w> <h> <color>
+  move <name> <dx> <dy>
+  resize <name> <w> <h>
+  delete <name>
+  list
+  clear
+  prompt  → generate Gemini 3D prompt
+  help`);
+            break;
+
+        case "add": {
+            const [_, name, x, y, w, h, color="#44f"] = parts;
+            if (!name || !x || !y || !w || !h) { log("Usage: add <name> <x> <y> <w> <h> <color>"); break; }
+            furniture.push({
+                name, 
+                x: +x, y: +y, 
+                w: +w, h: +h,
+                color
             });
+            log(`Added ${name}`);
+            draw();
+            break;
         }
 
-        // Generate Gemini prompt
-        function generatePrompt(view = 'front') {
-            let desc = `A realistic, non-interactive 3D view of a room interior from a \( {view} perspective. The room dimensions are \){room.width / 10}m wide by ${room.height / 10}m deep. Furniture placements:`;
-            room.furniture.forEach(item => {
-                desc += `\n- A \( {item.type} at position ( \){item.x / 10}m, \( {item.y / 10}m), rotated \){item.rotation} degrees, size \( {item.width / 10}m x \){item.height / 10}m.`;
-            });
-            desc += '\nRender in high detail, photorealistic style, with natural lighting.';
-            return desc;
+        case "move": {
+            const [_, name, dx, dy] = parts;
+            const f = furniture.find(o => o.name === name);
+            if (!f) { log("Furniture not found"); break; }
+            f.x += +dx; f.y += +dy;
+            log(`Moved ${name}`);
+            draw();
+            break;
         }
 
-        // Log to CLI
-        function log(message) {
-            cliOutput.innerHTML += message + '\n';
-            cliOutput.scrollTop = cliOutput.scrollHeight;
+        case "resize": {
+            const [_, name, w, h] = parts;
+            const f = furniture.find(o => o.name === name);
+            if (!f) { log("Furniture not found"); break; }
+            f.w = +w; f.h = +h;
+            log(`Resized ${name}`);
+            draw();
+            break;
         }
 
-        // Handle commands
-        function handleCommand(cmd) {
-            const parts = cmd.trim().split(/\s+/);
-            const action = parts[0].toLowerCase();
-
-            switch (action) {
-                case 'help':
-                    log(`Commands:
-- set room <width> <height> : Set room dimensions (pixels)
-- add <type> <x> <y> [<width> <height> <rotation>] : Add furniture (types: ${Object.keys(furnitureTypes).join(', ')})
-- move <id> <x> <y> : Move furniture by ID
-- rotate <id> <degrees> : Rotate furniture
-- resize <id> <width> <height> : Resize furniture
-- remove <id> : Remove furniture
-- list : List all furniture
-- clear : Clear all furniture
-- generate [<view>] : Generate Gemini prompt (view: front, top, side, etc.)
-- help : Show this help`);
-                    break;
-
-                case 'set':
-                    if (parts[1] === 'room' && parts.length === 4) {
-                        room.width = parseInt(parts[2]);
-                        room.height = parseInt(parts[3]);
-                        canvas.width = room.width;
-                        canvas.height = room.height;
-                        drawRoom();
-                        log('Room dimensions set.');
-                    } else {
-                        log('Invalid set command.');
-                    }
-                    break;
-
-                case 'add':
-                    if (parts.length >= 4) {
-                        const type = parts[1].toLowerCase();
-                        if (!furnitureTypes[type]) {
-                            log('Unknown furniture type.');
-                            break;
-                        }
-                        const x = parseInt(parts[2]);
-                        const y = parseInt(parts[3]);
-                        const w = parts[4] ? parseInt(parts[4]) : furnitureTypes[type].width;
-                        const h = parts[5] ? parseInt(parts[5]) : furnitureTypes[type].height;
-                        const rot = parts[6] ? parseInt(parts[6]) : 0;
-                        room.furniture.push({id: nextId++, type, x, y, width: w, height: h, rotation: rot});
-                        drawRoom();
-                        log(`Added \( {type} with ID \){nextId - 1}.`);
-                    } else {
-                        log('Invalid add command.');
-                    }
-                    break;
-
-                case 'move':
-                    if (parts.length === 4) {
-                        const id = parseInt(parts[1]);
-                        const item = room.furniture.find(i => i.id === id);
-                        if (item) {
-                            item.x = parseInt(parts[2]);
-                            item.y = parseInt(parts[3]);
-                            drawRoom();
-                            log(`Moved ID ${id}.`);
-                        } else {
-                            log('Item not found.');
-                        }
-                    } else {
-                        log('Invalid move command.');
-                    }
-                    break;
-
-                case 'rotate':
-                    if (parts.length === 3) {
-                        const id = parseInt(parts[1]);
-                        const item = room.furniture.find(i => i.id === id);
-                        if (item) {
-                            item.rotation = parseInt(parts[2]);
-                            drawRoom();
-                            log(`Rotated ID ${id}.`);
-                        } else {
-                            log('Item not found.');
-                        }
-                    } else {
-                        log('Invalid rotate command.');
-                    }
-                    break;
-
-                case 'resize':
-                    if (parts.length === 4) {
-                        const id = parseInt(parts[1]);
-                        const item = room.furniture.find(i => i.id === id);
-                        if (item) {
-                            item.width = parseInt(parts[2]);
-                            item.height = parseInt(parts[3]);
-                            drawRoom();
-                            log(`Resized ID ${id}.`);
-                        } else {
-                            log('Item not found.');
-                        }
-                    } else {
-                        log('Invalid resize command.');
-                    }
-                    break;
-
-                case 'remove':
-                    if (parts.length === 2) {
-                        const id = parseInt(parts[1]);
-                        room.furniture = room.furniture.filter(i => i.id !== id);
-                        drawRoom();
-                        log(`Removed ID ${id}.`);
-                    } else {
-                        log('Invalid remove command.');
-                    }
-                    break;
-
-                case 'list':
-                    let listStr = 'Furniture list:\n';
-                    room.furniture.forEach(item => {
-                        listStr += `ID \( {item.id}: \){item.type} at (\( {item.x}, \){item.y}), size \( {item.width}x \){item.height}, rot ${item.rotation}\n`;
-                    });
-                    log(listStr);
-                    break;
-
-                case 'clear':
-                    room.furniture = [];
-                    nextId = 1;
-                    drawRoom();
-                    log('Cleared all furniture.');
-                    break;
-
-                case 'generate':
-                    const view = parts[1] || 'front';
-                    const prompt = generatePrompt(view);
-                    promptOutput.innerText = prompt;
-                    log('Generated prompt (copied to output area).');
-                    break;
-
-                default:
-                    log('Unknown command. Type "help" for list.');
-            }
+        case "delete": {
+            const [_, name] = parts;
+            furniture = furniture.filter(o => o.name !== name);
+            log(`Deleted ${name}`);
+            draw();
+            break;
         }
 
-        // Event listener for input
-        cliInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const cmd = cliInput.value.trim();
-                if (cmd) {
-                    log('$ ' + cmd);
-                    handleCommand(cmd);
-                }
-                cliInput.value = '';
-            }
-        });
+        case "list":
+            log("Furniture:");
+            furniture.forEach(f => 
+                log(`  ${f.name}: x=${f.x}, y=${f.y}, w=${f.w}, h=${f.h}, color=${f.color}`));
+            break;
 
-        // Initial draw
-        drawRoom();
-        log('Welcome to Room Designer CLI. Type "help" for commands.');
-    </script>
+        case "clear":
+            furniture = [];
+            log("Cleared all furniture");
+            draw();
+            break;
+
+        case "prompt":
+            log("Generated Prompt:\n" + generateGeminiPrompt());
+            break;
+
+        default:
+            log("Unknown command. Type 'help'");
+    }
+}
+
+// ----------------------------
+// Gemini Prompt Generation
+// ----------------------------
+function generateGeminiPrompt() {
+    const items = furniture.map(f =>
+        `${f.name}: positioned at (${f.x}, ${f.y}), size (${f.w}×${f.h})`
+    ).join("; ");
+
+return `
+Create a photorealistic 3D interior render of a room with the following layout:
+
+Room size: ${room.width} × ${room.height} cm (treat as proportions if scaled).
+
+Furniture objects and positions (top-down coordinates, origin at top-left):
+${items || "No furniture placed."}
+
+Rendering requirements:
+• Use realistic materials, global illumination, soft shadows.
+• Furniture should match described positions precisely.
+• Camera angle: 35–45° isometric perspective.
+• High fidelity textures for walls, floor, and furniture.
+• No people. No text. Non-interactive.
+
+Output: A single photorealistic 3D render.
+`.trim();
+}
+
+// ----------------------------
+// CLI Input Handler
+// ----------------------------
+input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        const cmd = input.value;
+        log("> " + cmd);
+        execute(cmd);
+        input.value = "";
+    }
+});
+
+// Initial message
+log("Room Designer CLI loaded. Type 'help'.");
+
+draw();
+</script>
+
 </body>
 </html>
