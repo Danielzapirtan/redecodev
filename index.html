@@ -496,7 +496,7 @@
             
             setupCLI() {
                 this.cliCommands = {
-                    help: (args) => {
+                    help: () => 
                     this.cliOutput(`
 Available commands:
 - help: Show this help
@@ -510,9 +510,9 @@ Available commands:
 - roominfo: Show room information
 - save: Save room layout (console)
 - load: Load room layout (console)
-                    `)},
-                    clear: (args) => {
-                      this.clearRoom()},
+                    `),
+                    clear: () =>
+                      this.clearRoom(),
                     resize: (args) => {
                         if (args.length >= 2) {
                             this.roomWidth = parseInt(args[0]);
