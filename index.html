@@ -496,7 +496,7 @@
             
             setupCLI() {
                 this.cliCommands = {
-                    help: () => this.cliOutput(`
+                    help: (args) => this.cliOutput(`
 Available commands:
 - help: Show this help
 - clear: Clear all furniture
@@ -812,7 +812,6 @@ Room Information:
                 const parts = cmd.split(' ');
                 const command = parts[0].toLowerCase();
                 const args = parts.slice(1) || [];
-                alert(command);
                 //if (this.cliCommands[command]) {
                     this.cliCommands[command](args);
                 /*} else {
