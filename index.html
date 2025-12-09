@@ -1,738 +1,1553 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room Designer & Gemini Prompt Engineer</title>
+    <title>AR Room Decorator</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Courier New', monospace;
+            box-sizing: border-box;
         }
         
         body {
-            background-color: #0f172a;
-            color: #e2e8f0;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 400px 1fr 400px;
-            gap: 20px;
-            height: calc(100vh - 40px);
-        }
-        
-        .panel {
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 15px;
-            overflow-y: auto;
-        }
-        
-        .panel-header {
-            font-size: 14px;
-            font-weight: bold;
-            color: #60a5fa;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #334155;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .room-canvas {
-            background-color: #111827;
-            border: 1px solid #334155;
-            position: relative;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             overflow: hidden;
+            background: #000;
         }
         
-        .grid {
+        #ar-canvas {
             position: absolute;
             width: 100%;
             height: 100%;
-            background-image: 
-                linear-gradient(rgba(30, 41, 59, 0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
-            background-size: 40px 40px;
         }
         
-        .furniture {
+        /* UI Container */
+        #ui-container {
             position: absolute;
-            border: 1px solid;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        #ui-container > * {
+            pointer-events: auto;
+        }
+        
+        /* Top Bar */
+        #top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            padding: 20px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            cursor: move;
-            user-select: none;
-            font-size: 11px;
-            overflow: hidden;
         }
         
-        .furniture.selected {
-            border-width: 2px;
-            border-style: dashed;
+        #status {
+            color: white;
+            font-size: 14px;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 12px;
+            border-radius: 20px;
         }
         
-        .control-group {
-            margin-bottom: 20px;
-        }
-        
-        .command-line {
-            background-color: #111827;
-            border: 1px solid #334155;
-            padding: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            color: #e2e8f0;
-            width: 100%;
-            resize: vertical;
-            min-height: 100px;
-        }
-        
-        .btn {
-            background-color: #3b82f6;
+        #exit-btn {
+            background: rgba(255,59,48,0.9);
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: bold;
-            margin-right: 8px;
-            margin-bottom: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
         }
         
-        .btn:hover {
-            background-color: #2563eb;
+        /* Furniture Menu */
+        #furniture-menu {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
         }
         
-        .btn-secondary {
-            background-color: #475569;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #334155;
-        }
-        
-        .btn-success {
-            background-color: #10b981;
-        }
-        
-        .btn-success:hover {
-            background-color: #059669;
-        }
-        
-        .input-group {
-            margin-bottom: 12px;
-        }
-        
-        label {
-            display: block;
-            font-size: 12px;
-            margin-bottom: 5px;
-            color: #94a3b8;
-        }
-        
-        input, select, textarea {
-            background-color: #111827;
-            border: 1px solid #334155;
-            color: #e2e8f0;
-            padding: 8px;
-            width: 100%;
-            border-radius: 4px;
-            font-size: 13px;
-        }
-        
-        .furniture-list {
+        #furniture-menu.active {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 15px;
+        }
+        
+        #furniture-scroll {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 0 20px 10px 20px;
+            max-width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        #furniture-scroll::-webkit-scrollbar {
+            display: none;
         }
         
         .furniture-item {
-            background-color: #334155;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 12px;
+            min-width: 100px;
             text-align: center;
-            min-width: 70px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         
-        .furniture-item:hover {
-            background-color: #475569;
+        .furniture-item:active {
+            transform: scale(0.95);
         }
         
-        .log {
-            background-color: #111827;
-            border: 1px solid #334155;
-            padding: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: #e2e8f0;
-            height: 200px;
-            overflow-y: auto;
-            margin-top: 15px;
+        .furniture-item.selected {
+            background: rgba(0,122,255,0.95);
+            color: white;
         }
         
-        .log-entry {
+        .furniture-icon {
+            font-size: 36px;
             margin-bottom: 5px;
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
         }
         
-        .log-cmd {
-            color: #60a5fa;
+        .furniture-name {
+            font-size: 12px;
+            font-weight: 600;
         }
         
-        .log-info {
-            color: #e2e8f0;
-        }
-        
-        .log-success {
-            color: #10b981;
-        }
-        
-        .log-error {
-            color: #ef4444;
-        }
-        
-        .status-bar {
+        /* Controls */
+        #controls {
             position: absolute;
-            bottom: 0;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        #controls.active {
+            display: flex;
+        }
+        
+        .control-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.95);
+            border: none;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .control-btn.danger {
+            background: rgba(255,59,48,0.95);
+            color: white;
+        }
+        
+        /* Start Screen */
+        #start-screen {
+            position: absolute;
+            top: 0;
             left: 0;
             right: 0;
-            background-color: rgba(15, 23, 42, 0.9);
-            padding: 8px 15px;
-            font-size: 12px;
-            border-top: 1px solid #334155;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            z-index: 100;
         }
         
-        .help-text {
-            font-size: 11px;
-            color: #94a3b8;
-            margin-top: 5px;
-            line-height: 1.4;
+        #start-screen h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            font-weight: 700;
         }
         
-        .prompt-output {
-            background-color: #111827;
-            border: 1px solid #334155;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            color: #e2e8f0;
-            height: 300px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            margin-top: 15px;
-            line-height: 1.4;
+        #start-screen p {
+            font-size: 16px;
+            margin-bottom: 40px;
+            opacity: 0.9;
         }
         
-        .dimension-display {
+        #start-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        
+        #start-btn:active {
+            transform: scale(0.95);
+        }
+        
+        #start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Instructions */
+        #instructions {
             position: absolute;
-            background-color: rgba(15, 23, 42, 0.8);
-            padding: 2px 6px;
-            font-size: 10px;
-            border-radius: 2px;
-            pointer-events: none;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 90%;
+            display: none;
+        }
+        
+        #instructions.active {
+            display: block;
+        }
+        
+        /* Color Picker */
+        #color-picker {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 12px;
+            display: none;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        #color-picker.active {
+            display: flex;
+        }
+        
+        .color-option {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 3px solid white;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .color-option.selected {
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px #007aff;
+        }
+
+        .debug {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            color: #0f0;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 5px;
+            max-width: 300px;
+            word-wrap: break-word;
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Left Panel: Controls & Furniture -->
-        <div class="panel">
-            <div class="panel-header">Controls & Furniture</div>
-            
-            <div class="control-group">
-                <div class="input-group">
-                    <label for="roomWidth">Room Width (grid units)</label>
-                    <input type="number" id="roomWidth" value="20" min="5" max="50">
-                </div>
-                
-                <div class="input-group">
-                    <label for="roomHeight">Room Height (grid units)</label>
-                    <input type="number" id="roomHeight" value="15" min="5" max="50">
-                </div>
-                
-                <button class="btn" id="resizeRoom">Resize Room</button>
-                <button class="btn btn-secondary" id="clearRoom">Clear All</button>
-            </div>
-            
-            <div class="control-group">
-                <div class="panel-header">Furniture Library</div>
-                <div class="furniture-list" id="furnitureLibrary">
-                    <div class="furniture-item" data-type="sofa" data-width="4" data-height="2">Sofa</div>
-                    <div class="furniture-item" data-type="table" data-width="3" data-height="3">Table</div>
-                    <div class="furniture-item" data-type="bed" data-width="4" data-height="5">Bed</div>
-                    <div class="furniture-item" data-type="chair" data-width="1" data-height="1">Chair</div>
-                    <div class="furniture-item" data-type="desk" data-width="3" data-height="2">Desk</div>
-                    <div class="furniture-item" data-type="bookshelf" data-width="2" data-height="4">Bookshelf</div>
-                    <div class="furniture-item" data-type="lamp" data-width="1" data-height="1">Lamp</div>
-                    <div class="furniture-item" data-type="tv" data-width="3" data-height="2">TV Stand</div>
-                    <div class="furniture-item" data-type="rug" data-width="5" data-height="4">Rug</div>
-                    <div class="furniture-item" data-type="plant" data-width="1" data-height="1">Plant</div>
-                </div>
-                
-                <div class="input-group">
-                    <label for="customFurniture">Custom Furniture</label>
-                    <input type="text" id="customFurniture" placeholder="Enter furniture name">
-                </div>
-                
-                <div class="input-group">
-                    <label for="customWidth">Width (grid units)</label>
-                    <input type="number" id="customWidth" value="2" min="1" max="10">
-                </div>
-                
-                <div class="input-group">
-                    <label for="customHeight">Height (grid units)</label>
-                    <input type="number" id="customHeight" value="2" min="1" max="10">
-                </div>
-                
-                <button class="btn" id="addCustom">Add Custom Furniture</button>
-            </div>
-            
-            <div class="control-group">
-                <div class="panel-header">CLI Commands</div>
-                <textarea class="command-line" id="commandInput" placeholder="Enter commands here (one per line). Type 'help' for command list.">help</textarea>
-                <button class="btn" id="executeCommands">Execute Commands</button>
-                <button class="btn btn-secondary" id="clearCommands">Clear</button>
-                
-                <div class="log">
-                    <div class="log-entry log-info">Room Designer CLI v1.0</div>
-                    <div class="log-entry log-info">Type 'help' for command list</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Center Panel: Room Canvas -->
-        <div class="panel" style="padding: 0; position: relative;">
-            <div class="room-canvas" id="roomCanvas">
-                <div class="grid" id="grid"></div>
-                <!-- Furniture will be added here dynamically -->
-            </div>
-            
-            <div class="status-bar">
-                <div>Room: 20×15 | Furniture: 0 | Selected: None</div>
-                <div>Grid: 40px | X: 0, Y: 0</div>
-            </div>
-        </div>
-        
-        <!-- Right Panel: Prompt Engineering -->
-        <div class="panel">
-            <div class="panel-header">Gemini Prompt Engineering</div>
-            
-            <div class="control-group">
-                <div class="input-group">
-                    <label for="roomStyle">Room Style</label>
-                    <select id="roomStyle">
-                        <option value="modern">Modern</option>
-                        <option value="minimalist">Minimalist</option>
-                        <option value="traditional">Traditional</option>
-                        <option value="industrial">Industrial</option>
-                        <option value="scandinavian">Scandinavian</option>
-                        <option value="bohemian">Bohemian</option>
-                        <option value="rustic">Rustic</option>
-                        <option value="contemporary">Contemporary</option>
-                    </select>
-                </div>
-                
-                <div class="input-group">
-                    <label for="lighting">Lighting</label>
-                    <select id="lighting">
-                        <option value="natural daylight">Natural Daylight</option>
-                        <option value="warm interior lighting">Warm Interior Lighting</option>
-                        <option value="studio lighting">Studio Lighting</option>
-                        <option value="evening lighting">Evening Lighting</option>
-                        <option value="moody lighting">Moody Lighting</option>
-                    </select>
-                </div>
-                
-                <div class="input-group">
-                    <label for="cameraAngle">Camera Angle</label>
-                    <select id="cameraAngle">
-                        <option value="wide angle from corner">Wide Angle from Corner</option>
-                        <option value="eye level">Eye Level</option>
-                        <option value="top down">Top Down</option>
-                        <option value="close up on seating area">Close Up on Seating Area</option>
-                    </select>
-                </div>
-                
-                <div class="input-group">
-                    <label for="additionalDetails">Additional Details</label>
-                    <textarea id="additionalDetails" rows="3" placeholder="Add any additional details for the scene..."></textarea>
-                </div>
-                
-                <button class="btn btn-success" id="generatePrompt">Generate Gemini Prompt</button>
-                <button class="btn" id="copyPrompt">Copy to Clipboard</button>
-            </div>
-            
-            <div class="panel-header">Generated Prompt</div>
-            <div class="prompt-output" id="promptOutput">
-                // Prompt will appear here
-                // 1. Generate a prompt using the button above
-                // 2. Copy it to use with Google Gemini
-                // 3. The prompt will create a realistic 3D view of your room
-            </div>
-            
-            <div class="control-group">
-                <div class="panel-header">Prompt Templates</div>
-                <button class="btn btn-secondary" data-template="photorealistic">Photorealistic</button>
-                <button class="btn btn-secondary" data-template="archviz">Architectural Visualization</button>
-                <button class="btn btn-secondary" data-template="sketch">Design Sketch</button>
-                <button class="btn btn-secondary" data-template="detailed">Detailed Description</button>
-                
-                <div class="help-text">
-                    Use these templates as starting points for different styles of 3D visualization prompts.
-                </div>
-            </div>
-        </div>
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1>🏠 AR Room Decorator</h1>
+        <p>Place and arrange furniture in your room using augmented reality</p>
+        <button id="start-btn">Start Decorating</button>
+        <div id="debug-info" class="debug"></div>
     </div>
-
-    <script>
-        // Room Designer Application
-        class RoomDesigner {
-            constructor() {
-                this.roomWidth = 20;
-                this.roomHeight = 15;
-                this.gridSize = 40;
-                this.furniture = [];
-                this.selectedFurniture = null;
-                this.dragging = false;
-                this.dragOffset = { x: 0, y: 0 };
-                this.commandHistory = [];
-                
-                this.init();
-            }
-            
-            init() {
-                this.canvas = document.getElementById('roomCanvas');
-                this.grid = document.getElementById('grid');
-                this.statusBar = this.canvas.querySelector('.status-bar');
-                
-                this.setupEventListeners();
-                this.resizeRoom();
-                this.updateStatus();
-                this.setupCLI();
-                this.setupPromptEngineer();
-            }
-            
-            setupEventListeners() {
-                // Room controls
-                document.getElementById('resizeRoom').addEventListener('click', () => this.resizeRoom());
-                document.getElementById('clearRoom').addEventListener('click', () => this.clearRoom());
-                
-                // Furniture library
-                document.querySelectorAll('.furniture-item').forEach(item => {
-                    item.addEventListener('click', (e) => {
-                        const type = e.target.getAttribute('data-type');
-                        const width = parseInt(e.target.getAttribute('data-width'));
-                        const height = parseInt(e.target.getAttribute('data-height'));
-                        this.addFurniture(type, width, height);
-                    });
-                });
-                
-                // Custom furniture
-                document.getElementById('addCustom').addEventListener('click', () => {
-                    const type = document.getElementById('customFurniture').value || 'custom';
-                    const width = parseInt(document.getElementById('customWidth').value);
-                    const height = parseInt(document.getElementById('customHeight').value);
-                    if (type && width > 0 && height > 0) {
-                        this.addFurniture(type, width, height);
-                    }
-                });
-                
-                // Canvas interactions
-                this.canvas.addEventListener('mousedown', (e) => this.handleCanvasMouseDown(e));
-                this.canvas.addEventListener('mousemove', (e) => this.handleCanvasMouseMove(e));
-                this.canvas.addEventListener('mouseup', () => this.handleCanvasMouseUp());
-                this.canvas.addEventListener('click', (e) => {
-                    if (!this.dragging) {
-                        this.handleCanvasClick(e);
-                    }
-                });
-                
-                // CLI commands
-                document.getElementById('executeCommands').addEventListener('click', () => this.executeCLICommands());
-                document.getElementById('clearCommands').addEventListener('click', () => {
-                    document.getElementById('commandInput').value = '';
-                });
-                
-                // Keyboard shortcuts
-                document.addEventListener('keydown', (e) => {
-                    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
-                    
-                    if (e.key === 'Delete' || e.key === 'Backspace') {
-                        this.deleteSelectedFurniture();
-                    } else if (e.key === 'Escape') {
-                        this.deselectFurniture();
-                    } else if (e.key === 'ArrowUp' && this.selectedFurniture) {
-                        this.moveSelectedFurniture(0, -1);
-                        e.preventDefault();
-                    } else if (e.key === 'ArrowDown' && this.selectedFurniture) {
-                        this.moveSelectedFurniture(0, 1);
-                        e.preventDefault();
-                    } else if (e.key === 'ArrowLeft' && this.selectedFurniture) {
-                        this.moveSelectedFurniture(-1, 0);
-                        e.preventDefault();
-                    } else if (e.key === 'ArrowRight' && this.selectedFurniture) {
-                        this.moveSelectedFurniture(1, 0);
-                        e.preventDefault();
-                    }
-                });
-            }
-
-            setupCLI() {
-                // Bind methods to this instance to maintain proper context
-                this.cliCommands = {
-                    help: (args) => {
-                        this.cliOutput(`
-            Available commands:
-            - help: Show this help
-            - clear: Clear all furniture
-            - resize <width> <height>: Resize room
-            - add <type> <width> <height>: Add furniture
-            - list: List all furniture
-            - select <id>: Select furniture by ID
-            - delete: Delete selected furniture
-            - move <x> <y>: Move selected furniture
-            - roominfo: Show room information
-            - save: Save room layout (console)
-            - load: Load room layout (console)
-                        `, 'info');
-                    },
-                    clear: (args) => {
-                        this.clearRoom();
-                        this.cliOutput('Room cleared', 'success');
-                    },
-                    resize: (args) => {
-                        if (args && args.length >= 2) {
-                            this.roomWidth = parseInt(args[0]);
-                            this.roomHeight = parseInt(args[1]);
-                            document.getElementById('roomWidth').value = this.roomWidth;
-                            document.getElementById('roomHeight').value = this.roomHeight;
-                            this.resizeRoom();
-                            this.cliOutput(`Room resized to ${this.roomWidth}x${this.roomHeight}`, 'success');
-                        } else {
-                            this.cliOutput('Usage: resize <width> <height>', 'error');
-                        }
-                    },
-                    add: (args) => {
-                        if (args && args.length >= 3) {
-                            const type = args[0];
-                            const width = parseInt(args[1]);
-                            const height = parseInt(args[2]);
-                            this.addFurniture(type, width, height);
-                            this.cliOutput(`Added ${type} (${width}x${height})`, 'success');
-                        } else {
-                            this.cliOutput('Usage: add <type> <width> <height>', 'error');
-                        }
-                    },
-                    list: (args) => {
-                        if (this.furniture.length === 0) {
-                            this.cliOutput('No furniture in room', 'info');
-                            return;
-                        }
-                        
-                        let output = 'Furniture in room:\n';
-                        this.furniture.forEach((f, i) => {
-                            output += `[${i}] ${f.type} at (${f.x},${f.y}) size ${f.width}x${f.height}\n`;
-                        });
-                        this.cliOutput(output, 'info');
-                    },
-                    select: (args) => {
-                        if (args && args.length >= 1) {
-                            const id = parseInt(args[0]);
-                            if (id >= 0 && id < this.furniture.length) {
-                                this.selectFurniture(this.furniture[id]);
-                                this.cliOutput(`Selected furniture ${id}: ${this.furniture[id].type}`, 'success');
-                            } else {
-                                this.cliOutput(`Invalid furniture ID: ${id}`, 'error');
-                            }
-                        } else {
-                            this.cliOutput('Usage: select <id>', 'error');
-                        }
-                    },
-                    delete: (args) => {
-                        if (this.selectedFurniture) {
-                            const type = this.selectedFurniture.type;
-                            this.deleteSelectedFurniture();
-                            this.cliOutput(`Deleted ${type}`, 'success');
-                        } else {
-                            this.cliOutput('No furniture selected', 'error');
-                        }
-                    },
-                    move: (args) => {
-                        if (args && args.length >= 2 && this.selectedFurniture) {
-                            const newX = parseInt(args[0]);
-                            const newY = parseInt(args[1]);
-                            const dx = newX - this.selectedFurniture.x;
-                            const dy = newY - this.selectedFurniture.y;
-                            this.moveSelectedFurniture(dx, dy);
-                            this.cliOutput(`Moved to (${this.selectedFurniture.x},${this.selectedFurniture.y})`, 'success');
-                        } else if (!this.selectedFurniture) {
-                            this.cliOutput('No furniture selected', 'error');
-                        } else {
-                            this.cliOutput('Usage: move <x> <y>', 'error');
-                        }
-                    },
-                    roominfo: (args) => {
-                        this.cliOutput(`
-            Room Information:
-            - Dimensions: ${this.roomWidth} x ${this.roomHeight} grid units
-            - Furniture count: ${this.furniture.length}
-            - Grid size: ${this.gridSize}px per unit
-            - Total area: ${this.roomWidth * this.roomHeight} grid units
-                        `, 'info');
-                    },
-                    save: (args) => {
-                        const layout = {
-                            room: { width: this.roomWidth, height: this.roomHeight },
-                            furniture: this.furniture
-                        };
-                        console.log('Room layout (copy this):');
-                        console.log(JSON.stringify(layout, null, 2));
-                        this.cliOutput('Layout saved to console. Copy the JSON output.', 'success');
-                    },
-                    load: (args) => {
-                        this.cliOutput('To load a layout, use the browser console:\n1. Copy your layout JSON\n2. In console: roomDesigner.loadLayout(yourJson)\n3. Or: roomDesigner.furniture = yourJson.furniture; roomDesigner.renderFurniture();', 'info');
-                    }
-                };
-            }
-           
-            cliOutput(message, type = 'info') {
-                const log = document.querySelector('.log');
-                const entry = document.createElement('div');
-                entry.className = `log-entry log-${type}`;
-                entry.innerHTML = `${message.trim()}`;
-                log.appendChild(entry);
-                log.scrollTop = log.scrollHeight;
-            }
-            
-            // Prompt Engineering Functions
-            generatePrompt() {
-                const style = document.getElementById('roomStyle').value;
-                const lighting = document.getElementById('lighting').value;
-                const cameraAngle = document.getElementById('cameraAngle').value;
-                const additionalDetails = document.getElementById('additionalDetails').value;
-                
-                // Create room description from furniture
-                let roomDescription = `A ${style} style room with the following layout:\n`;
-                roomDescription += `- Room dimensions: ${this.roomWidth} by ${this.roomHeight} grid units\n`;
-                
-                if (this.furniture.length === 0) {
-                    roomDescription += "- The room is currently empty\n";
-                } else {
-                    roomDescription += "- Furniture arrangement:\n";
-                    this.furniture.forEach(f => {
-                        roomDescription += `  * A ${f.type} (${f.width}x${f.height} units) positioned at coordinates (${f.x}, ${f.y})\n`;
-                    });
-                }
-                
-                // Build the prompt
-                let prompt = `Create a realistic, non-interactive 3D visualization of an interior room.\n\n`;
-                prompt += `SCENE DESCRIPTION:\n${roomDescription}\n`;
-                prompt += `STYLE AND SETTING:\n`;
-                prompt += `- Architectural style: ${style}\n`;
-                prompt += `- Lighting: ${lighting}\n`;
-                prompt += `- Camera angle: ${cameraAngle}\n`;
-                prompt += `- Render style: Photorealistic, architectural visualization quality\n`;
-                prompt += `- Mood: Inviting, well-designed, attention to material textures\n\n`;
-                
-                prompt += `TECHNICAL SPECIFICATIONS:\n`;
-                prompt += `- Output: Single high-quality image\n`;
-                prompt += `- Aspect ratio: 16:9\n`;
-                prompt += `- Resolution: 4K quality\n`;
-                prompt += `- Level of detail: High, with accurate proportions and realistic materials\n`;
-                prompt += `- Lighting: Global illumination, soft shadows, natural light falloff\n\n`;
-                
-                if (additionalDetails) {
-                    prompt += `ADDITIONAL DETAILS:\n${additionalDetails}\n\n`;
-                }
-                
-                prompt += `IMPORTANT NOTES:\n`;
-                prompt += `- Ensure all furniture is to scale and properly positioned\n`;
-                prompt += `- Pay attention to realistic material textures (wood, fabric, metal, etc.)\n`;
-                prompt += `- Include appropriate decorative elements that match the ${style} style\n`;
-                prompt += `- The image should look like a professional architectural visualization\n`;
-                prompt += `- Focus on composition, lighting, and atmosphere\n`;
-                
-                document.getElementById('promptOutput').textContent = prompt;
-            }
-            
-            copyPrompt() {
-                const prompt = document.getElementById('promptOutput').textContent;
-                navigator.clipboard.writeText(prompt).then(() => {
-                    this.cliOutput('Prompt copied to clipboard!', 'success');
-                });
-            }
-            
-            applyPromptTemplate(template) {
-                let prompt = '';
-                
-                switch(template) {
-                    case 'photorealistic':
-                        prompt = `Generate a photorealistic 3D rendering of the room described below. Use realistic materials, accurate lighting with soft shadows, and natural camera perspective. Focus on creating an image that looks like a professional architectural photograph with accurate scale, texture details, and atmospheric depth.`;
-                        break;
-                    case 'archviz':
-                        prompt = `Create an architectural visualization of the room. Use clean lines, accurate perspective, and professional rendering techniques typical of architectural software. Include scale references, proper lighting studies, and material callouts. The result should look like a professional architect's presentation render.`;
-                        break;
-                    case 'sketch':
-                        prompt = `Generate a design sketch or concept art of the room. Use loose, artistic lines, suggestive forms, and a creative interpretation. This should look like an architect's or designer's preliminary sketch with notes, measurements, and design ideas in the margins.`;
-                        break;
-                    case 'detailed':
-                        prompt = `Create an extremely detailed description of the 3D scene for text-to-image generation. Include specifics about materials (type of wood, fabric weave, metal finish), lighting conditions (time of day, light temperature, shadow softness), camera settings (focal length, aperture), and atmospheric elements (dust particles, light rays, subtle imperfections).`;
-                        break;
-                }
-                
-                document.getElementById('additionalDetails').value = prompt;
-                this.generatePrompt();
-            }
-            
-            // Public method for loading layouts from console
-            loadLayout(layout) {
-                if (layout.room) {
-                    this.roomWidth = layout.room.width;
-                    this.roomHeight = layout.room.height;
-                    document.getElementById('roomWidth').value = this.roomWidth;
-                    document.getElementById('roomHeight').value = this.roomHeight;
-                    this.resizeRoom();
-                }
-                
-                if (layout.furniture) {
-                    this.furniture = layout.furniture;
-                    this.renderFurniture();
-                    this.updateStatus();
-                    this.cliOutput('Layout loaded successfully');
-                }
+    
+    <!-- AR Canvas -->
+    <canvas id="ar-canvas"></canvas>
+    
+    <!-- UI Overlay -->
+    <div id="ui-container">
+        <!-- Top Bar -->
+        <div id="top-bar" style="display: none;">
+            <div id="status">Initializing...</div>
+            <button id="exit-btn">Exit AR</button>
+        </div>
+        
+        <!-- Instructions -->
+        <div id="instructions">
+            Tap on the floor to place furniture
+        </div>
+        
+        <!-- Furniture Menu -->
+        <div id="furniture-menu">
+            <div id="furniture-scroll"></div>
+        </div>
+        
+        <!-- Controls -->
+        <div id="controls">
+            <button class="control-btn" id="rotate-btn" title="Rotate">🔄</button>
+            <button class="control-btn" id="color-btn" title="Change Color">🎨</button>
+            <button class="control-btn danger" id="delete-btn" title="Delete">🗑️</button>
+        </div>
+        
+        <!-- Color Picker -->
+        <div id="color-picker"></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script type="module">
+        const DEBUG = false; // Set to true to see debug messages
+        
+        function log(msg) {
+            console.log(msg);
+            if (DEBUG) {
+                const debugDiv = document.getElementById('debug-info');
+                debugDiv.style.display = 'block';
+                debugDiv.innerHTML += msg + '<br>';
             }
         }
         
-        // Initialize the application
-        const roomDesigner = new RoomDesigner();
+        // Enhanced furniture catalog with realistic dimensions
+        const furnitureData = [
+            { 
+                id: 'sofa', 
+                name: 'Modern Sofa', 
+                icon: '🛋️', 
+                width: 2.0, 
+                height: 0.8, 
+                depth: 0.9, 
+                color: 0x8B7355,
+                fabric: true
+            },
+            { 
+                id: 'armchair', 
+                name: 'Armchair', 
+                icon: '🪑', 
+                width: 0.85, 
+                height: 1.0, 
+                depth: 0.9, 
+                color: 0x654321,
+                fabric: true
+            },
+            { 
+                id: 'dining_table', 
+                name: 'Dining Table', 
+                icon: '🍽️', 
+                width: 1.4, 
+                height: 0.75, 
+                depth: 0.9, 
+                color: 0x8B4513,
+                wood: true
+            },
+            { 
+                id: 'king_bed', 
+                name: 'King Bed', 
+                icon: '🛏️', 
+                width: 2.0, 
+                height: 0.5, 
+                depth: 2.1, 
+                color: 0xFFFFFF,
+                fabric: true
+            },
+            { 
+                id: 'office_desk', 
+                name: 'Office Desk', 
+                icon: '💼', 
+                width: 1.6, 
+                height: 0.75, 
+                depth: 0.8, 
+                color: 0x4A3728,
+                wood: true
+            },
+            { 
+                id: 'bookshelf', 
+                name: 'Bookshelf', 
+                icon: '📚', 
+                width: 0.9, 
+                height: 2.0, 
+                depth: 0.35, 
+                color: 0x654321,
+                wood: true
+            },
+            { 
+                id: 'floor_lamp', 
+                name: 'Floor Lamp', 
+                icon: '💡', 
+                width: 0.25, 
+                height: 2.0, 
+                depth: 0.25, 
+                color: 0x2F4F4F,
+                metal: true
+            },
+            { 
+                id: 'fiddle_leaf', 
+                name: 'Fiddle Leaf', 
+                icon: '🪴', 
+                width: 0.5, 
+                height: 1.8, 
+                depth: 0.5, 
+                color: 0x228B22,
+                plant: true
+            },
+            { 
+                id: 'entertainment_center', 
+                name: 'TV Stand', 
+                icon: '📺', 
+                width: 1.8, 
+                height: 0.6, 
+                depth: 0.45, 
+                color: 0x333333,
+                wood: true
+            },
+            { 
+                id: 'persian_rug', 
+                name: 'Persian Rug', 
+                icon: '🟫', 
+                width: 2.0, 
+                height: 0.02, 
+                depth: 1.4, 
+                color: 0x8B4513,
+                fabric: true
+            },
+            { 
+                id: 'coffee_table', 
+                name: 'Coffee Table', 
+                icon: '☕', 
+                width: 1.0, 
+                height: 0.4, 
+                depth: 0.6, 
+                color: 0x4A3728,
+                wood: true
+            },
+            { 
+                id: 'dresser', 
+                name: 'Dresser', 
+                icon: '👔', 
+                width: 1.2, 
+                height: 0.9, 
+                depth: 0.5, 
+                color: 0x8B7355,
+                wood: true
+            }
+        ];
         
-        // Make accessible from console for debugging/advanced use
-        window.roomDesigner = roomDesigner;
+        const colors = [
+            { name: 'Walnut', value: 0x4A3728 },
+            { name: 'Oak', value: 0x8B7355 },
+            { name: 'White', value: 0xF5F5F5 },
+            { name: 'Charcoal', value: 0x2F4F4F },
+            { name: 'Gray', value: 0x808080 },
+            { name: 'Navy', value: 0x2C3E50 },
+            { name: 'Emerald', value: 0x2ECC71 },
+            { name: 'Terracotta', value: 0xE67E22 },
+            { name: 'Blush', value: 0xFFB6C1 },
+            { name: 'Teal', value: 0x1ABC9C }
+        ];
         
-        // Add some initial furniture for demo
-        setTimeout(() => {
-            roomDesigner.addFurniture('sofa', 4, 2);
-            roomDesigner.addFurniture('table', 3, 3);
-            roomDesigner.addFurniture('chair', 1, 1);
-            roomDesigner.cliOutput('Demo furniture added. Try moving them with mouse or arrow keys.');
-        }, 500);
+        // State
+        let session = null;
+        let renderer, scene, camera;
+        let hitTestSource = null;
+        let hitTestSourceRequested = false;
+        let reticle = null;
+        let placedFurniture = [];
+        let selectedFurniture = null;
+        let selectedFurnitureType = null;
+        let controller = null;
+        
+        // UI Elements
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const topBar = document.getElementById('top-bar');
+        const statusDiv = document.getElementById('status');
+        const exitBtn = document.getElementById('exit-btn');
+        const furnitureMenu = document.getElementById('furniture-menu');
+        const furnitureScroll = document.getElementById('furniture-scroll');
+        const controls = document.getElementById('controls');
+        const instructions = document.getElementById('instructions');
+        const rotateBtn = document.getElementById('rotate-btn');
+        const colorBtn = document.getElementById('color-btn');
+        const deleteBtn = document.getElementById('delete-btn');
+        const colorPicker = document.getElementById('color-picker');
+        
+        // Material creation functions
+        function createWoodMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.7,
+                metalness: 0.2,
+                bumpScale: 0.002
+            });
+        }
+        
+        function createFabricMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.9,
+                metalness: 0.0
+            });
+        }
+        
+        function createMetalMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.3,
+                metalness: 0.8
+            });
+        }
+        
+        function createLeatherMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.5,
+                metalness: 0.1
+            });
+        }
+        
+        function createGlassMaterial() {
+            return new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transmission: 0.9,
+                roughness: 0.1,
+                thickness: 0.01,
+                transparent: true,
+                opacity: 0.8
+            });
+        }
+        
+        function createPlantMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.8,
+                metalness: 0.0
+            });
+        }
+        
+        // Initialize furniture menu
+        function initFurnitureMenu() {
+            furnitureData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'furniture-item';
+                div.innerHTML = `
+                    <div class="furniture-icon">${item.icon}</div>
+                    <div class="furniture-name">${item.name}</div>
+                `;
+                div.addEventListener('click', () => selectFurnitureType(item, div));
+                furnitureScroll.appendChild(div);
+            });
+        }
+        
+        // Initialize color picker
+        function initColorPicker() {
+            colors.forEach((color, index) => {
+                const div = document.createElement('div');
+                div.className = 'color-option';
+                div.style.background = `#${color.value.toString(16).padStart(6, '0')}`;
+                div.addEventListener('click', () => changeSelectedColor(color.value, div));
+                colorPicker.appendChild(div);
+            });
+        }
+        
+        function selectFurnitureType(item, element) {
+            selectedFurnitureType = item;
+            document.querySelectorAll('.furniture-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            deselectFurniture();
+            instructions.textContent = `Tap on floor to place ${item.name}`;
+            instructions.classList.add('active');
+        }
+        
+        function changeSelectedColor(colorValue, element) {
+            if (!selectedFurniture) return;
+            
+            selectedFurniture.traverse(child => {
+                if (child.isMesh && child.material) {
+                    child.material.color.setHex(colorValue);
+                    
+                    // Update material properties based on new color
+                    if (selectedFurniture.userData.furnitureData.wood) {
+                        child.material.roughness = 0.7;
+                        child.material.metalness = 0.2;
+                    } else if (selectedFurniture.userData.furnitureData.fabric) {
+                        child.material.roughness = 0.9;
+                        child.material.metalness = 0.0;
+                    } else if (selectedFurniture.userData.furnitureData.metal) {
+                        child.material.roughness = 0.3;
+                        child.material.metalness = 0.8;
+                    }
+                }
+            });
+            
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        function selectFurniture(furniture) {
+            deselectFurniture();
+            selectedFurniture = furniture;
+            controls.classList.add('active');
+            
+            // Add selection indicator
+            const box = new THREE.Box3().setFromObject(furniture);
+            const size = box.getSize(new THREE.Vector3());
+            const selectionBox = new THREE.Mesh(
+                new THREE.BoxGeometry(size.x + 0.02, size.y + 0.02, size.z + 0.02),
+                new THREE.MeshBasicMaterial({ 
+                    color: 0x00ff00, 
+                    wireframe: true,
+                    opacity: 0.5,
+                    transparent: true
+                })
+            );
+            selectionBox.position.copy(furniture.position);
+            selectionBox.rotation.copy(furniture.rotation);
+            selectionBox.name = 'selectionBox';
+            scene.add(selectionBox);
+            
+            // Highlight selected furniture with a subtle outline
+            furniture.traverse(child => {
+                if (child.isMesh) {
+                    child.material.emissive = new THREE.Color(0x111111);
+                }
+            });
+        }
+        
+        function deselectFurniture() {
+            if (selectedFurniture) {
+                selectedFurniture.traverse(child => {
+                    if (child.isMesh) {
+                        child.material.emissive = new THREE.Color(0x000000);
+                    }
+                });
+            }
+            selectedFurniture = null;
+            controls.classList.remove('active');
+            colorPicker.classList.remove('active');
+            const selectionBox = scene.getObjectByName('selectionBox');
+            if (selectionBox) scene.remove(selectionBox);
+        }
+        
+        function createFurniture(data) {
+            const group = new THREE.Group();
+            
+            switch(data.id) {
+                case 'sofa':
+                    createModernSofa(group, data);
+                    break;
+                case 'armchair':
+                    createArmchair(group, data);
+                    break;
+                case 'dining_table':
+                    createDiningTable(group, data);
+                    break;
+                case 'king_bed':
+                    createKingBed(group, data);
+                    break;
+                case 'office_desk':
+                    createOfficeDesk(group, data);
+                    break;
+                case 'bookshelf':
+                    createBookshelf(group, data);
+                    break;
+                case 'floor_lamp':
+                    createFloorLamp(group, data);
+                    break;
+                case 'fiddle_leaf':
+                    createFiddleLeafPlant(group, data);
+                    break;
+                case 'entertainment_center':
+                    createEntertainmentCenter(group, data);
+                    break;
+                case 'persian_rug':
+                    createPersianRug(group, data);
+                    break;
+                case 'coffee_table':
+                    createCoffeeTable(group, data);
+                    break;
+                case 'dresser':
+                    createDresser(group, data);
+                    break;
+                default:
+                    createBasicFurniture(group, data);
+            }
+            
+            group.userData.furnitureData = data;
+            
+            // Add click detection
+            group.traverse(child => {
+                if (child.isMesh) {
+                    child.userData.selectable = true;
+                    child.userData.parentGroup = group;
+                }
+            });
+            
+            return group;
+        }
+        
+        function createModernSofa(group, data) {
+            const material = createFabricMaterial(data.color);
+            const legMaterial = createMetalMaterial(0x2F4F4F);
+            
+            // Main seat cushion
+            const seat = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.95, data.height * 0.4, data.depth * 0.9),
+                material
+            );
+            seat.position.set(0, data.height * 0.2, 0);
+            group.add(seat);
+            
+            // Back cushion
+            const back = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.95, data.height * 0.6, data.depth * 0.15),
+                material
+            );
+            back.position.set(0, data.height * 0.7, -data.depth * 0.375);
+            group.add(back);
+            
+            // Armrests
+            const armrestGeometry = new THREE.BoxGeometry(data.width * 0.1, data.height * 0.8, data.depth * 0.8);
+            [-1, 1].forEach(side => {
+                const armrest = new THREE.Mesh(armrestGeometry, material);
+                armrest.position.set(side * data.width * 0.425, data.height * 0.4, 0);
+                group.add(armrest);
+            });
+            
+            // Legs
+            const legPositions = [
+                [-data.width/2.5, 0, -data.depth/3],
+                [data.width/2.5, 0, -data.depth/3],
+                [-data.width/2.5, 0, data.depth/3],
+                [data.width/2.5, 0, data.depth/3]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.03, 0.03, data.height * 0.2, 8),
+                    legMaterial
+                );
+                leg.position.set(pos[0], pos[1] + data.height * 0.1, pos[2]);
+                group.add(leg);
+            });
+            
+            // Throw pillows
+            for(let i = 0; i < 3; i++) {
+                const pillow = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.3, 0.15, 0.3),
+                    createFabricMaterial(0xE67E22 + i * 0x111111)
+                );
+                pillow.position.set(
+                    -data.width/4 + (i * data.width/4),
+                    data.height * 0.4,
+                    data.depth * 0.15
+                );
+                pillow.rotation.y = Math.PI/4 * i;
+                group.add(pillow);
+            }
+        }
+        
+        function createArmchair(group, data) {
+            const material = createLeatherMaterial(data.color);
+            const legMaterial = createWoodMaterial(0x4A3728);
+            
+            // Seat
+            const seat = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.4, data.depth),
+                material
+            );
+            seat.position.set(0, data.height * 0.2, 0);
+            group.add(seat);
+            
+            // Back
+            const back = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.8, data.depth * 0.15),
+                material
+            );
+            back.position.set(0, data.height * 0.8, -data.depth * 0.425);
+            group.add(back);
+            
+            // Armrests
+            const armrestGeometry = new THREE.BoxGeometry(data.width * 0.15, data.height * 0.6, data.depth * 0.8);
+            [-1, 1].forEach(side => {
+                const armrest = new THREE.Mesh(armrestGeometry, material);
+                armrest.position.set(side * data.width * 0.425, data.height * 0.3, data.depth * 0.1);
+                group.add(armrest);
+            });
+            
+            // Legs
+            const legGeometry = new THREE.CylinderGeometry(0.04, 0.04, data.height * 0.25, 8);
+            const legPositions = [
+                [-data.width/3, 0, -data.depth/3],
+                [data.width/3, 0, -data.depth/3],
+                [-data.width/3, 0, data.depth/3],
+                [data.width/3, 0, data.depth/3]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                leg.position.set(pos[0], pos[1] + data.height * 0.125, pos[2]);
+                group.add(leg);
+            });
+        }
+        
+        function createDiningTable(group, data) {
+            const tableTopMaterial = createWoodMaterial(data.color);
+            const legMaterial = createWoodMaterial(0x4A3728);
+            
+            // Table top
+            const tableTop = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.1, data.depth),
+                tableTopMaterial
+            );
+            tableTop.position.set(0, data.height, 0);
+            group.add(tableTop);
+            
+            // Legs
+            const legGeometry = new THREE.CylinderGeometry(0.06, 0.08, data.height * 0.9, 8);
+            const legPositions = [
+                [-data.width/3, data.height * 0.45, -data.depth/3],
+                [data.width/3, data.height * 0.45, -data.depth/3],
+                [-data.width/3, data.height * 0.45, data.depth/3],
+                [data.width/3, data.height * 0.45, data.depth/3]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                leg.position.set(pos[0], pos[1], pos[2]);
+                group.add(leg);
+            });
+            
+            // Table stretcher
+            const stretcher = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.7, data.height * 0.08, data.depth * 0.08),
+                legMaterial
+            );
+            stretcher.position.set(0, data.height * 0.2, 0);
+            group.add(stretcher);
+        }
+        
+        function createKingBed(group, data) {
+            const mattressMaterial = createFabricMaterial(data.color);
+            const frameMaterial = createWoodMaterial(0x4A3728);
+            
+            // Mattress
+            const mattress = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.4, data.depth * 0.9),
+                mattressMaterial
+            );
+            mattress.position.set(0, data.height * 0.2, 0);
+            group.add(mattress);
+            
+            // Bed frame
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 1.05, data.height * 0.2, data.depth * 0.95),
+                frameMaterial
+            );
+            frame.position.set(0, 0, 0);
+            group.add(frame);
+            
+            // Headboard
+            const headboard = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.8, data.depth * 0.1),
+                frameMaterial
+            );
+            headboard.position.set(0, data.height * 0.6, -data.depth * 0.425);
+            group.add(headboard);
+            
+            // Pillows
+            for(let i = 0; i < 2; i++) {
+                const pillow = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.6, 0.15, 0.4),
+                    createFabricMaterial(0xF5F5F5)
+                );
+                pillow.position.set(
+                    -data.width/4 + (i * data.width/2),
+                    data.height * 0.4,
+                    data.depth * 0.2
+                );
+                group.add(pillow);
+            }
+            
+            // Nightstands
+            const nightstandMaterial = createWoodMaterial(0x8B7355);
+            [-1, 1].forEach(side => {
+                const nightstand = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.4, data.height * 0.6, 0.4),
+                    nightstandMaterial
+                );
+                nightstand.position.set(side * (data.width/2 + 0.25), data.height * 0.3, -data.depth * 0.3);
+                group.add(nightstand);
+                
+                // Nightstand top
+                const top = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.45, data.height * 0.05, 0.45),
+                    nightstandMaterial
+                );
+                top.position.set(side * (data.width/2 + 0.25), data.height * 0.625, -data.depth * 0.3);
+                group.add(top);
+            });
+        }
+        
+        function createOfficeDesk(group, data) {
+            const desktopMaterial = createWoodMaterial(data.color);
+            const legMaterial = createMetalMaterial(0x2F4F4F);
+            
+            // Desktop
+            const desktop = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.05, data.depth),
+                desktopMaterial
+            );
+            desktop.position.set(0, data.height, 0);
+            group.add(desktop);
+            
+            // Drawers
+            const drawer = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.6, data.height * 0.8, data.depth * 0.7),
+                desktopMaterial
+            );
+            drawer.position.set(0, data.height * 0.4, data.depth * 0.15);
+            group.add(drawer);
+            
+            // Drawer handles
+            const handleMaterial = createMetalMaterial(0x888888);
+            for(let i = 0; i < 3; i++) {
+                const handle = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.15, 0.02, 0.04),
+                    handleMaterial
+                );
+                handle.position.set(
+                    0,
+                    data.height * 0.3 + (i * data.height * 0.25),
+                    data.depth * 0.51
+                );
+                group.add(handle);
+            }
+            
+            // Legs
+            const legPositions = [
+                [-data.width/2.5, data.height * 0.5, -data.depth/2.5],
+                [data.width/2.5, data.height * 0.5, -data.depth/2.5]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.04, 0.04, data.height, 8),
+                    legMaterial
+                );
+                leg.position.set(pos[0], pos[1], pos[2]);
+                group.add(leg);
+            });
+        }
+        
+        function createBookshelf(group, data) {
+            const material = createWoodMaterial(data.color);
+            
+            // Main frame
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height, data.depth),
+                material
+            );
+            group.add(frame);
+            
+            // Shelves
+            for(let i = 1; i < 5; i++) {
+                const shelf = new THREE.Mesh(
+                    new THREE.BoxGeometry(data.width * 0.95, data.height * 0.03, data.depth * 0.9),
+                    material
+                );
+                shelf.position.set(0, -data.height/2 + i * (data.height/4.5), 0);
+                group.add(shelf);
+            }
+            
+            // Books
+            const bookColors = [0xDC143C, 0x4169E1, 0x228B22, 0xFFD700, 0x8A2BE2];
+            for(let i = 0; i < 12; i++) {
+                const row = Math.floor(i / 4);
+                const col = i % 4;
+                const book = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.2, 0.02 + Math.random() * 0.05, 0.12),
+                    createFabricMaterial(bookColors[Math.floor(Math.random() * bookColors.length)])
+                );
+                book.position.set(
+                    -data.width/3 + col * 0.22,
+                    -data.height/2.5 + (row + 1) * (data.height/4.5),
+                    data.depth * 0.1
+                );
+                book.rotation.z = (Math.random() - 0.5) * 0.1;
+                group.add(book);
+            }
+        }
+        
+        function createFloorLamp(group, data) {
+            const baseMaterial = createMetalMaterial(0x2F4F4F);
+            const poleMaterial = createMetalMaterial(0x666666);
+            const shadeMaterial = createFabricMaterial(0xF5F5F5);
+            
+            // Base
+            const base = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.15, 0.08, 16),
+                baseMaterial
+            );
+            base.position.set(0, 0.04, 0);
+            group.add(base);
+            
+            // Pole
+            const pole = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.02, 0.02, data.height * 0.9, 8),
+                poleMaterial
+            );
+            pole.position.set(0, data.height * 0.45, 0);
+            group.add(pole);
+            
+            // Shade
+            const shade = new THREE.Mesh(
+                new THREE.ConeGeometry(0.3, 0.4, 16),
+                shadeMaterial
+            );
+            shade.position.set(0, data.height * 0.9, 0);
+            shade.rotation.x = Math.PI;
+            group.add(shade);
+            
+            // Add light
+            const light = new THREE.PointLight(0xFFFFCC, 1.5, 3);
+            light.position.set(0, data.height * 0.85, 0);
+            group.add(light);
+        }
+        
+        function createFiddleLeafPlant(group, data) {
+            const potMaterial = createClayMaterial(0x8B4513);
+            const stemMaterial = createWoodMaterial(0x654321);
+            const leafMaterial = createPlantMaterial(0x228B22);
+            
+            // Pot
+            const pot = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.2, 0.25, 0.3, 16),
+                potMaterial
+            );
+            pot.position.set(0, 0.15, 0);
+            group.add(pot);
+            
+            // Soil
+            const soil = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.18, 0.18, 0.05, 16),
+                createPlantMaterial(0x5D4037)
+            );
+            soil.position.set(0, 0.325, 0);
+            group.add(soil);
+            
+            // Main stem
+            const stem = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.03, 0.04, data.height * 0.7, 8),
+                stemMaterial
+            );
+            stem.position.set(0, 0.5 + data.height * 0.35, 0);
+            group.add(stem);
+            
+            // Leaves
+            for(let i = 0; i < 8; i++) {
+                const leafHeight = 0.7 + (i * 0.15);
+                const leaf = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.2, 8, 8, 0, Math.PI),
+                    leafMaterial
+                );
+                leaf.position.set(
+                    (Math.random() - 0.5) * 0.3,
+                    leafHeight,
+                    (Math.random() - 0.5) * 0.3
+                );
+                leaf.rotation.x = Math.PI/2;
+                leaf.rotation.y = Math.random() * Math.PI * 2;
+                leaf.scale.set(1, 0.6 + Math.random() * 0.4, 0.8);
+                group.add(leaf);
+            }
+        }
+        
+        function createEntertainmentCenter(group, data) {
+            const material = createWoodMaterial(data.color);
+            const shelfMaterial = createWoodMaterial(0x4A3728);
+            
+            // Main unit
+            const mainUnit = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height, data.depth),
+                material
+            );
+            group.add(mainUnit);
+            
+            // Shelves
+            for(let i = 0; i < 3; i++) {
+                const shelf = new THREE.Mesh(
+                    new THREE.BoxGeometry(data.width * 0.9, data.height * 0.03, data.depth * 0.8),
+                    shelfMaterial
+                );
+                shelf.position.set(0, -data.height/3 + i * (data.height/3), data.depth * 0.1);
+                group.add(shelf);
+            }
+            
+            // TV screen
+            const tvScreen = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.7, data.height * 0.5, 0.01),
+                new THREE.MeshStandardMaterial({ 
+                    color: 0x000000,
+                    emissive: 0x111111,
+                    roughness: 0.1,
+                    metalness: 0.9
+                })
+            );
+            tvScreen.position.set(0, data.height * 0.25, data.depth * 0.501);
+            group.add(tvScreen);
+            
+            // Speaker boxes
+            [-1, 1].forEach(side => {
+                const speaker = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.2, 0.3, 0.25),
+                    createMetalMaterial(0x333333)
+                );
+                speaker.position.set(side * (data.width/2.5), 0.15, data.depth * 0.5);
+                group.add(speaker);
+            });
+        }
+        
+        function createPersianRug(group, data) {
+            const rugMaterial = createFabricMaterial(data.color);
+            const patternMaterial = createFabricMaterial(0x2C3E50);
+            
+            // Base rug
+            const rug = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height, data.depth),
+                rugMaterial
+            );
+            rug.position.set(0, data.height/2, 0);
+            group.add(rug);
+            
+            // Border pattern
+            const border = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.95, data.height * 1.1, data.depth * 0.1),
+                patternMaterial
+            );
+            border.position.set(0, data.height/2, 0);
+            group.add(border);
+            
+            // Center medallion
+            const medallion = new THREE.Mesh(
+                new THREE.CircleGeometry(0.3, 32),
+                patternMaterial
+            );
+            medallion.rotation.x = -Math.PI/2;
+            medallion.position.set(0, data.height * 1.05, 0);
+            group.add(medallion);
+        }
+        
+        function createCoffeeTable(group, data) {
+            const tableTopMaterial = createGlassMaterial();
+            const legMaterial = createMetalMaterial(0x2F4F4F);
+            
+            // Glass table top
+            const tableTop = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.05, data.depth),
+                tableTopMaterial
+            );
+            tableTop.position.set(0, data.height, 0);
+            group.add(tableTop);
+            
+            // Modern X-shaped legs
+            const legGeometry = new THREE.BoxGeometry(0.05, data.height * 0.95, 0.05);
+            [-1, 1].forEach(side => {
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                leg.position.set(side * data.width/3, data.height * 0.475, side * data.depth/3);
+                leg.rotation.z = Math.PI/8 * side;
+                group.add(leg);
+            });
+            
+            // Magazine
+            const magazine = new THREE.Mesh(
+                new THREE.BoxGeometry(0.25, 0.001, 0.35),
+                createFabricMaterial(0xDC143C)
+            );
+            magazine.position.set(0.1, data.height * 1.05, 0.1);
+            magazine.rotation.y = Math.PI/6;
+            group.add(magazine);
+        }
+        
+        function createDresser(group, data) {
+            const material = createWoodMaterial(data.color);
+            const drawerMaterial = createWoodMaterial(0x4A3728);
+            const handleMaterial = createMetalMaterial(0x888888);
+            
+            // Main frame
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height, data.depth),
+                material
+            );
+            group.add(frame);
+            
+            // Drawers (3x2 grid)
+            for(let row = 0; row < 2; row++) {
+                for(let col = 0; col < 3; col++) {
+                    const drawer = new THREE.Mesh(
+                        new THREE.BoxGeometry(data.width/3.2, data.height/2.2, data.depth * 0.8),
+                        drawerMaterial
+                    );
+                    drawer.position.set(
+                        -data.width/3 + col * (data.width/3),
+                        -data.height/4 + row * (data.height/2),
+                        data.depth * 0.1
+                    );
+                    group.add(drawer);
+                    
+                    // Drawer handle
+                    const handle = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.15, 0.02, 0.04),
+                        handleMaterial
+                    );
+                    handle.position.set(
+                        -data.width/3 + col * (data.width/3),
+                        -data.height/4 + row * (data.height/2),
+                        data.depth * 0.51
+                    );
+                    group.add(handle);
+                }
+            }
+            
+            // Top surface
+            const top = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 1.02, data.height * 0.05, data.depth * 1.02),
+                material
+            );
+            top.position.set(0, data.height * 0.525, 0);
+            group.add(top);
+        }
+        
+        function createBasicFurniture(group, data) {
+            const material = new THREE.MeshStandardMaterial({ color: data.color });
+            const geometry = new THREE.BoxGeometry(data.width, data.height, data.depth);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.y = data.height / 2;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+        }
+        
+        function createClayMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+        }
+        
+        async function startAR() {
+            try {
+                log('Checking WebXR support...');
+                startBtn.disabled = true;
+                startBtn.textContent = 'Starting...';
+                
+                if (!navigator.xr) {
+                    throw new Error('WebXR not available. Use Chrome/Edge on Android.');
+                }
+                
+                log('Checking AR session support...');
+                const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
+                if (!isSupported) {
+                    throw new Error('AR not supported on this device.');
+                }
+                
+                log('AR supported! Requesting session...');
+                
+                // Request session with minimal requirements first
+                session = await navigator.xr.requestSession('immersive-ar', {
+                    optionalFeatures: ['hit-test', 'dom-overlay', 'local', 'local-floor', 'bounded-floor', 'unbounded'],
+                    domOverlay: { root: document.getElementById('ui-container') }
+                });
+                
+                log('Session created!');
+                
+                // Hide start screen, show UI
+                startScreen.style.display = 'none';
+                topBar.style.display = 'flex';
+                furnitureMenu.classList.add('active');
+                
+                const canvas = document.getElementById('ar-canvas');
+                const gl = canvas.getContext('webgl', { xrCompatible: true });
+                
+                if (!gl) {
+                    throw new Error('Failed to get WebGL context');
+                }
+                
+                log('Setting up Three.js...');
+                
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera();
+                camera.matrixAutoUpdate = false;
+                
+                renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    context: gl,
+                    alpha: true,
+                    preserveDrawingBuffer: true,
+                    antialias: true
+                });
+                
+                renderer.autoClear = false;
+                renderer.xr.enabled = true;
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                log('Setting XR session...');
+                await renderer.xr.setSession(session);
+                
+                // Enhanced lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                directionalLight.position.set(5, 8, 5);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 2048;
+                directionalLight.shadow.mapSize.height = 2048;
+                directionalLight.shadow.camera.near = 0.5;
+                directionalLight.shadow.camera.far = 50;
+                directionalLight.shadow.camera.left = -10;
+                directionalLight.shadow.camera.right = 10;
+                directionalLight.shadow.camera.top = 10;
+                directionalLight.shadow.camera.bottom = -10;
+                scene.add(directionalLight);
+                
+                // Additional fill light
+                const fillLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.3);
+                scene.add(fillLight);
+                
+                // Create reticle
+                reticle = new THREE.Mesh(
+                    new THREE.RingGeometry(0.1, 0.12, 32).rotateX(-Math.PI/2),
+                    new THREE.MeshBasicMaterial({ 
+                        color: 0x00ff00, 
+                        side: THREE.DoubleSide,
+                        opacity: 0.8,
+                        transparent: true
+                    })
+                );
+                reticle.matrixAutoUpdate = false;
+                reticle.visible = false;
+                scene.add(reticle);
+                
+                log('Creating controller...');
+                
+                // Add controller for tap detection
+                controller = renderer.xr.getController(0);
+                controller.addEventListener('select', onSelect);
+                
+                // Add ray for visualization
+                const geometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(0, 0, 0),
+                    new THREE.Vector3(0, 0, -1)
+                ]);
+                const line = new THREE.Line(geometry, 
+                    new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+                );
+                line.scale.z = 5;
+                controller.add(line);
+                
+                scene.add(controller);
+                
+                log('Starting render loop...');
+                statusDiv.textContent = 'Point camera at floor';
+                
+                // Handle session end
+                session.addEventListener('end', onSessionEnd);
+                
+                // Animation loop
+                renderer.setAnimationLoop(render);
+                
+                // Raycasting for furniture selection
+                const raycaster = new THREE.Raycaster();
+                
+                // Handle clicks on furniture
+                controller.addEventListener('selectstart', () => {
+                    if (!selectedFurnitureType) {
+                        // Cast ray to select existing furniture
+                        raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+                        const intersects = raycaster.intersectObjects(scene.children, true);
+                        
+                        for (let intersect of intersects) {
+                            if (intersect.object.userData.selectable && intersect.object.userData.parentGroup) {
+                                selectFurniture(intersect.object.userData.parentGroup);
+                                return;
+                            }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('AR Error:', error);
+                log('ERROR: ' + error.message);
+                alert('Failed to start AR: ' + error.message);
+                startScreen.style.display = 'flex';
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Decorating';
+            }
+        }
+        
+        function render(timestamp, frame) {
+            if (!frame) return;
+            
+            const referenceSpace = renderer.xr.getReferenceSpace();
+            const session = renderer.xr.getSession();
+            
+            // Request hit test source once
+            if (session && !hitTestSourceRequested) {
+                session.requestReferenceSpace('viewer').then((viewerSpace) => {
+                    session.requestHitTestSource({ space: viewerSpace }).then((source) => {
+                        hitTestSource = source;
+                        log('Hit test source created');
+                    }).catch(err => {
+                        log('Hit test not available: ' + err.message);
+                        statusDiv.textContent = 'Hit test unavailable - may not work on this device';
+                    });
+                }).catch(err => {
+                    log('Viewer space error: ' + err.message);
+                });
+                hitTestSourceRequested = true;
+            }
+            
+            // Update reticle position
+            if (hitTestSource) {
+                const hitTestResults = frame.getHitTestResults(hitTestSource);
+                if (hitTestResults.length > 0) {
+                    const hit = hitTestResults[0];
+                    const pose = hit.getPose(referenceSpace);
+                    
+                    if (pose) {
+                        reticle.visible = true;
+                        reticle.matrix.fromArray(pose.transform.matrix);
+                        
+                        // Keep reticle horizontal
+                        reticle.rotation.x = -Math.PI/2;
+                        
+                        statusDiv.textContent = selectedFurnitureType 
+                            ? `Tap to place ${selectedFurnitureType.name}` 
+                            : 'Select furniture below or tap existing furniture';
+                    }
+                } else {
+                    reticle.visible = false;
+                    statusDiv.textContent = 'Point camera at floor';
+                }
+            }
+            
+            // Update camera
+            const pose = frame.getViewerPose(referenceSpace);
+            if (pose) {
+                const view = pose.views[0];
+                camera.matrix.fromArray(view.transform.matrix);
+                camera.updateMatrixWorld(true);
+                camera.projectionMatrix.fromArray(view.projectionMatrix);
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        function onSelect() {
+            if (!reticle.visible && selectedFurnitureType) return;
+            
+            if (selectedFurnitureType) {
+                // Place new furniture
+                const furniture = createFurniture(selectedFurnitureType);
+                furniture.matrix.copy(reticle.matrix);
+                furniture.matrix.decompose(furniture.position, furniture.quaternion, furniture.scale);
+                furniture.matrixAutoUpdate = true;
+                
+                // Adjust position so furniture sits on floor
+                const bbox = new THREE.Box3().setFromObject(furniture);
+                const height = bbox.max.y - bbox.min.y;
+                furniture.position.y += height / 2;
+                
+                scene.add(furniture);
+                placedFurniture.push(furniture);
+                
+                log('Placed: ' + selectedFurnitureType.name);
+                instructions.classList.remove('active');
+            }
+        }
+        
+        function onSessionEnd() {
+            log('Session ended');
+            hitTestSource = null;
+            hitTestSourceRequested = false;
+            session = null;
+            renderer.setAnimationLoop(null);
+            startScreen.style.display = 'flex';
+            topBar.style.display = 'none';
+            furnitureMenu.classList.remove('active');
+            controls.classList.remove('active');
+            placedFurniture = [];
+            selectedFurniture = null;
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Decorating';
+        }
+        
+        // Button handlers
+        rotateBtn.addEventListener('click', () => {
+            if (selectedFurniture) {
+                selectedFurniture.rotation.y += Math.PI / 4;
+                const selectionBox = scene.getObjectByName('selectionBox');
+                if (selectionBox) selectionBox.rotation.y = selectedFurniture.rotation.y;
+            }
+        });
+        
+        colorBtn.addEventListener('click', () => {
+            if (selectedFurniture) {
+                colorPicker.classList.toggle('active');
+            }
+        });
+        
+        deleteBtn.addEventListener('click', () => {
+            if (selectedFurniture) {
+                scene.remove(selectedFurniture);
+                placedFurniture = placedFurniture.filter(f => f !== selectedFurniture);
+                deselectFurniture();
+            }
+        });
+        
+        exitBtn.addEventListener('click', () => {
+            if (session) session.end();
+        });
+        
+        startBtn.addEventListener('click', startAR);
+        
+        // Initialize
+        log('Initializing app...');
+        initFurnitureMenu();
+        initColorPicker();
+        log('Ready!');
+        
     </script>
 </body>
 </html>
