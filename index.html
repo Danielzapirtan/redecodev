@@ -1,570 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CLI Interior Designer</title>
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Courier New', monospace;
-  background: #0a0e27;
-  color: #00ff41;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.container {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.terminal {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  overflow: hidden;
-}
-
-.output {
-  flex: 1;
-  overflow-y: auto;
-  margin-bottom: 15px;
-  line-height: 1.6;
-  font-size: 14px;
-}
-
-.output::-webkit-scrollbar {
-  width: 8px;
-}
-
-.output::-webkit-scrollbar-track {
-  background: #0a0e27;
-}
-
-.output::-webkit-scrollbar-thumb {
-  background: #00ff41;
-  border-radius: 4px;
-}
-
-.line {
-  margin: 3px 0;
-}
-
-.prompt {
-  color: #ffaa00;
-}
-
-.error {
-  color: #ff4444;
-}
-
-.success {
-  color: #44ff44;
-}
-
-.info {
-  color: #4488ff;
-}
-
-.input-line {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.input-line input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: #00ff41;
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  outline: none;
-  padding: 5px 0;
-}
-
-.canvas-panel {
-  width: 600px;
-  background: #151b35;
-  border-left: 2px solid #00ff41;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-canvas {
-  width: 100%;
-  background: #0a0e27;
-  border: 2px solid #00ff41;
-  cursor: crosshair;
-}
-
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.btn {
-  background: #00ff41;
-  color: #0a0e27;
-  border: none;
-  padding: 8px 15px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.btn:hover {
-  background: #00cc33;
-}
-
-.btn:active {
-  background: #00aa22;
-}
-
-.legend {
-  font-size: 11px;
-  line-height: 1.8;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legend-color {
-  width: 20px;
-  height: 20px;
-  border: 1px solid #00ff41;
-}
-
-h3 {
-  color: #ffaa00;
-  margin-bottom: 10px;
-  font-size: 14px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Designer CLI Web App</title>
+    <style>
+        body {
+            font-family: monospace;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #cli-container {
+            width: 800px;
+            height: 400px;
+            background-color: #000;
+            color: #0f0;
+            padding: 10px;
+            overflow-y: scroll;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+        }
+        #cli-output {
+            white-space: pre-wrap;
+        }
+        #cli-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #0f0;
+            font-family: monospace;
+            outline: none;
+        }
+        #canvas-container {
+            border: 1px solid #333;
+            margin-bottom: 20px;
+        }
+        #prompt-output {
+            width: 800px;
+            height: 200px;
+            background-color: #fff;
+            border: 1px solid #333;
+            padding: 10px;
+            overflow-y: scroll;
+            white-space: pre-wrap;
+        }
+        canvas {
+            background-color: #fff;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-  <div class="terminal">
-    <div class="output" id="output"></div>
-    <div class="input-line">
-      <span class="prompt">$</span>
-      <input type="text" id="input" autocomplete="off" autofocus>
+    <h1>Room Designer CLI</h1>
+    <p>Type commands in the CLI below. Use 'help' for command list.</p>
+    <div id="cli-container">
+        <div id="cli-output"></div>
+        <span>$ </span><input type="text" id="cli-input" autofocus>
     </div>
-  </div>
-  
-  <div class="canvas-panel">
-    <canvas id="canvas" width="560" height="400"></canvas>
-    <div class="controls">
-      <button class="btn" onclick="clearRoom()">Clear</button>
-      <button class="btn" onclick="exportLayout()">Export JSON</button>
-      <button class="btn" onclick="generatePrompt()">Generate Prompt</button>
+    <div id="canvas-container">
+        <canvas id="room-canvas" width="600" height="400"></canvas>
     </div>
-    <div class="legend">
-      <h3>Legend:</h3>
-      <div class="legend-item">
-        <div class="legend-color" style="background: #333;"></div>
-        <span>Room walls</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background: #8b4513;"></div>
-        <span>Furniture</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background: #4169e1;"></div>
-        <span>Selected</span>
-      </div>
-    </div>
-  </div>
-</div>
+    <div id="prompt-output">Generated prompt will appear here...</div>
 
-<script>
-const output = document.getElementById('output');
-const input = document.getElementById('input');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+    <script>
+        // Room model
+        let room = {
+            width: 600,
+            height: 400,
+            furniture: [] // {id: number, type: string, x: number, y: number, width: number, height: number, rotation: number}
+        };
+        let nextId = 1;
 
-let room = { width: 5, depth: 4, height: 2.7 }; // meters
-let furniture = [];
-let selectedFurniture = null;
-let dragging = false;
-let dragOffset = { x: 0, y: 0 };
+        // Predefined furniture sizes (in pixels, assuming canvas scale)
+        const furnitureTypes = {
+            chair: {width: 50, height: 50},
+            table: {width: 100, height: 60},
+            bed: {width: 150, height: 200},
+            sofa: {width: 150, height: 80},
+            lamp: {width: 30, height: 30},
+            shelf: {width: 100, height: 30}
+            // Add more as needed
+        };
 
-const furnitureTypes = {
-  sofa: { w: 2.0, d: 0.9, h: 0.8, color: '#8b4513' },
-  chair: { w: 0.6, d: 0.6, h: 0.9, color: '#a0522d' },
-  table: { w: 1.5, d: 0.8, h: 0.75, color: '#deb887' },
-  bed: { w: 2.0, d: 1.6, h: 0.5, color: '#cd853f' },
-  desk: { w: 1.2, d: 0.6, h: 0.75, color: '#d2691e' },
-  shelf: { w: 1.0, d: 0.3, h: 2.0, color: '#8b7355' },
-  tv: { w: 1.2, d: 0.3, h: 0.8, color: '#2f4f4f' },
-  plant: { w: 0.4, d: 0.4, h: 1.2, color: '#228b22' },
-  lamp: { w: 0.3, d: 0.3, h: 1.5, color: '#ffd700' }
-};
+        // CLI elements
+        const cliOutput = document.getElementById('cli-output');
+        const cliInput = document.getElementById('cli-input');
+        const canvas = document.getElementById('room-canvas');
+        const ctx = canvas.getContext('2d');
+        const promptOutput = document.getElementById('prompt-output');
 
-const commands = {
-  help: () => showHelp(),
-  clear: () => { output.innerHTML = ''; print('Terminal cleared.', 'success'); },
-  room: (args) => setRoom(args),
-  add: (args) => addFurniture(args),
-  list: () => listFurniture(),
-  remove: (args) => removeFurniture(args),
-  move: (args) => moveFurniture(args),
-  rotate: (args) => rotateFurniture(args),
-  types: () => listTypes(),
-  export: () => exportLayout(),
-  prompt: () => generatePrompt(),
-  reset: () => resetRoom()
-};
+        // Draw the room and furniture
+        function drawRoom() {
+            ctx.clearRect(0, 0, room.width, room.height);
+            // Draw room boundaries
+            ctx.strokeRect(0, 0, room.width, room.height);
 
-function print(text, className = '') {
-  const line = document.createElement('div');
-  line.className = `line ${className}`;
-  line.textContent = text;
-  output.appendChild(line);
-  output.scrollTop = output.scrollHeight;
-}
+            // Draw furniture
+            room.furniture.forEach(item => {
+                ctx.save();
+                ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
+                ctx.rotate(item.rotation * Math.PI / 180);
+                ctx.fillStyle = '#888';
+                ctx.fillRect(-item.width / 2, -item.height / 2, item.width, item.height);
+                ctx.fillStyle = '#000';
+                ctx.font = '12px monospace';
+                ctx.fillText(item.type, -item.width / 2 + 5, 0);
+                ctx.restore();
+            });
+        }
 
-function showHelp() {
-  print('=== CLI INTERIOR DESIGNER ===', 'info');
-  print('');
-  print('COMMANDS:', 'success');
-  print('  help                    - Show this help');
-  print('  room <w> <d> <h>        - Set room dimensions (meters)');
-  print('  add <type> <x> <z>      - Add furniture at position');
-  print('  list                    - List all furniture');
-  print('  remove <id>             - Remove furniture by ID');
-  print('  move <id> <x> <z>       - Move furniture to position');
-  print('  rotate <id> <deg>       - Rotate furniture (0/90/180/270)');
-  print('  types                   - List available furniture types');
-  print('  export                  - Export layout as JSON');
-  print('  prompt                  - Generate Gemini prompt');
-  print('  reset                   - Clear all furniture');
-  print('  clear                   - Clear terminal');
-  print('');
-  print('TIPS:', 'info');
-  print('  • Use mouse to drag furniture on canvas');
-  print('  • Click furniture to select');
-  print('  • Coordinates in meters from corner');
-  print('');
-}
+        // Generate Gemini prompt
+        function generatePrompt(view = 'front') {
+            let desc = `A realistic, non-interactive 3D view of a room interior from a \( {view} perspective. The room dimensions are \){room.width / 10}m wide by ${room.height / 10}m deep. Furniture placements:`;
+            room.furniture.forEach(item => {
+                desc += `\n- A \( {item.type} at position ( \){item.x / 10}m, \( {item.y / 10}m), rotated \){item.rotation} degrees, size \( {item.width / 10}m x \){item.height / 10}m.`;
+            });
+            desc += '\nRender in high detail, photorealistic style, with natural lighting.';
+            return desc;
+        }
 
-function setRoom(args) {
-  if (args.length !== 3) {
-    print('Usage: room <width> <depth> <height>', 'error');
-    return;
-  }
-  const [w, d, h] = args.map(parseFloat);
-  if (isNaN(w) || isNaN(d) || isNaN(h)) {
-    print('Invalid dimensions. Use numbers.', 'error');
-    return;
-  }
-  room = { width: w, depth: d, height: h };
-  print(`Room set to ${w}m × ${d}m × ${h}m`, 'success');
-  drawRoom();
-}
+        // Log to CLI
+        function log(message) {
+            cliOutput.innerHTML += message + '\n';
+            cliOutput.scrollTop = cliOutput.scrollHeight;
+        }
 
-function addFurniture(args) {
-  if (args.length < 3) {
-    print('Usage: add <type> <x> <z>', 'error');
-    return;
-  }
-  const [type, x, z] = args;
-  if (!furnitureTypes[type]) {
-    print(`Unknown type: ${type}. Use 'types' to see available.`, 'error');
-    return;
-  }
-  const px = parseFloat(x);
-  const pz = parseFloat(z);
-  if (isNaN(px) || isNaN(pz)) {
-    print('Invalid position. Use numbers.', 'error');
-    return;
-  }
-  
-  const item = {
-    id: furniture.length + 1,
-    type: type,
-    x: px,
-    z: pz,
-    rotation: 0,
-    ...furnitureTypes[type]
-  };
-  
-  furniture.push(item);
-  print(`Added ${type} #${item.id} at (${px}, ${pz})`, 'success');
-  drawRoom();
-}
+        // Handle commands
+        function handleCommand(cmd) {
+            const parts = cmd.trim().split(/\s+/);
+            const action = parts[0].toLowerCase();
 
-function listFurniture() {
-  if (furniture.length === 0) {
-    print('No furniture placed.', 'info');
-    return;
-  }
-  print('FURNITURE LIST:', 'info');
-  furniture.forEach(item => {
-    print(`  #${item.id} ${item.type} at (${item.x.toFixed(1)}, ${item.z.toFixed(1)}) rot:${item.rotation}°`);
-  });
-}
+            switch (action) {
+                case 'help':
+                    log(`Commands:
+- set room <width> <height> : Set room dimensions (pixels)
+- add <type> <x> <y> [<width> <height> <rotation>] : Add furniture (types: ${Object.keys(furnitureTypes).join(', ')})
+- move <id> <x> <y> : Move furniture by ID
+- rotate <id> <degrees> : Rotate furniture
+- resize <id> <width> <height> : Resize furniture
+- remove <id> : Remove furniture
+- list : List all furniture
+- clear : Clear all furniture
+- generate [<view>] : Generate Gemini prompt (view: front, top, side, etc.)
+- help : Show this help`);
+                    break;
 
-function removeFurniture(args) {
-  if (args.length !== 1) {
-    print('Usage: remove <id>', 'error');
-    return;
-  }
-  const id = parseInt(args[0]);
-  const index = furniture.findIndex(f => f.id === id);
-  if (index === -1) {
-    print(`Furniture #${id} not found.`, 'error');
-    return;
-  }
-  furniture.splice(index, 1);
-  print(`Removed furniture #${id}`, 'success');
-  drawRoom();
-}
+                case 'set':
+                    if (parts[1] === 'room' && parts.length === 4) {
+                        room.width = parseInt(parts[2]);
+                        room.height = parseInt(parts[3]);
+                        canvas.width = room.width;
+                        canvas.height = room.height;
+                        drawRoom();
+                        log('Room dimensions set.');
+                    } else {
+                        log('Invalid set command.');
+                    }
+                    break;
 
-function moveFurniture(args) {
-  if (args.length !== 3) {
-    print('Usage: move <id> <x> <z>', 'error');
-    return;
-  }
-  const [id, x, z] = args;
-  const item = furniture.find(f => f.id === parseInt(id));
-  if (!item) {
-    print(`Furniture #${id} not found.`, 'error');
-    return;
-  }
-  item.x = parseFloat(x);
-  item.z = parseFloat(z);
-  print(`Moved #${id} to (${item.x}, ${item.z})`, 'success');
-  drawRoom();
-}
+                case 'add':
+                    if (parts.length >= 4) {
+                        const type = parts[1].toLowerCase();
+                        if (!furnitureTypes[type]) {
+                            log('Unknown furniture type.');
+                            break;
+                        }
+                        const x = parseInt(parts[2]);
+                        const y = parseInt(parts[3]);
+                        const w = parts[4] ? parseInt(parts[4]) : furnitureTypes[type].width;
+                        const h = parts[5] ? parseInt(parts[5]) : furnitureTypes[type].height;
+                        const rot = parts[6] ? parseInt(parts[6]) : 0;
+                        room.furniture.push({id: nextId++, type, x, y, width: w, height: h, rotation: rot});
+                        drawRoom();
+                        log(`Added \( {type} with ID \){nextId - 1}.`);
+                    } else {
+                        log('Invalid add command.');
+                    }
+                    break;
 
-function rotateFurniture(args) {
-  if (args.length !== 2) {
-    print('Usage: rotate <id> <degrees>', 'error');
-    return;
-  }
-  const [id, deg] = args;
-  const item = furniture.find(f => f.id === parseInt(id));
-  if (!item) {
-    print(`Furniture #${id} not found.`, 'error');
-    return;
-  }
-  item.rotation = parseInt(deg) % 360;
-  print(`Rotated #${id} to ${item.rotation}°`, 'success');
-  drawRoom();
-}
+                case 'move':
+                    if (parts.length === 4) {
+                        const id = parseInt(parts[1]);
+                        const item = room.furniture.find(i => i.id === id);
+                        if (item) {
+                            item.x = parseInt(parts[2]);
+                            item.y = parseInt(parts[3]);
+                            drawRoom();
+                            log(`Moved ID ${id}.`);
+                        } else {
+                            log('Item not found.');
+                        }
+                    } else {
+                        log('Invalid move command.');
+                    }
+                    break;
 
-function listTypes() {
-  print('AVAILABLE FURNITURE TYPES:', 'info');
-  Object.entries(furnitureTypes).forEach(([name, specs]) => {
-    print(`  ${name.padEnd(10)} ${specs.w}m × ${specs.d}m × ${specs.h}m`);
-  });
-}
+                case 'rotate':
+                    if (parts.length === 3) {
+                        const id = parseInt(parts[1]);
+                        const item = room.furniture.find(i => i.id === id);
+                        if (item) {
+                            item.rotation = parseInt(parts[2]);
+                            drawRoom();
+                            log(`Rotated ID ${id}.`);
+                        } else {
+                            log('Item not found.');
+                        }
+                    } else {
+                        log('Invalid rotate command.');
+                    }
+                    break;
 
-function exportLayout() {
-  const data = { room, furniture: furniture.map(f => ({
-    id: f.id,
-    type: f.type,
-    x: f.x,
-    z: f.z,
-    rotation: f.rotation
-  }))};
-  const json = JSON.stringify(data, null, 2);
-  print('=== LAYOUT JSON ===', 'info');
-  print(json);
-  navigator.clipboard.writeText(json).then(() => {
-    print('Copied to clipboard!', 'success');
-  });
-}
+                case 'resize':
+                    if (parts.length === 4) {
+                        const id = parseInt(parts[1]);
+                        const item = room.furniture.find(i => i.id === id);
+                        if (item) {
+                            item.width = parseInt(parts[2]);
+                            item.height = parseInt(parts[3]);
+                            drawRoom();
+                            log(`Resized ID ${id}.`);
+                        } else {
+                            log('Item not found.');
+                        }
+                    } else {
+                        log('Invalid resize command.');
+                    }
+                    break;
 
-function generatePrompt() {
-  if (furniture.length === 0) {
-    print('Add furniture first!', 'error');
-    return;
-  }
-  
-  const furnitureSummary = furniture.map(f => {
-    const pos = `at ${f.x.toFixed(1)}m, ${f.z.toFixed(1)}m`;
-    const rot = f.rotation !== 0 ? ` rotated ${f.rotation}°` : '';
-    return `${f.type}${rot} ${pos}`;
-  }).join(', ');
-  
-  const prompt = `Create a photorealistic 3D interior rendering of a room with the following specifications:
+                case 'remove':
+                    if (parts.length === 2) {
+                        const id = parseInt(parts[1]);
+                        room.furniture = room.furniture.filter(i => i.id !== id);
+                        drawRoom();
+                        log(`Removed ID ${id}.`);
+                    } else {
+                        log('Invalid remove command.');
+                    }
+                    break;
 
-ROOM DIMENSIONS:
-- Width: ${room.width}m
-- Depth: ${room.depth}m  
-- Height: ${room.height}m
+                case 'list':
+                    let listStr = 'Furniture list:\n';
+                    room.furniture.forEach(item => {
+                        listStr += `ID \( {item.id}: \){item.type} at (\( {item.x}, \){item.y}), size \( {item.width}x \){item.height}, rot ${item.rotation}\n`;
+                    });
+                    log(listStr);
+                    break;
 
-FURNITURE LAYOUT:
-${furniture.map(f => {
-  const dims = furnitureTypes[f.type];
-  return `- ${f.type.toUpperCase()}: positioned at x=${f.x.toFixed(1)}m, z=${f.z.toFixed(1)}m from the corner, dimensions ${dims.w}m × ${dims.d}m × ${dims.h}m${f.rotation !== 0 ? `, rotated ${f.rotation}° clockwise` : ''}`;
-}).join('\n')}
+                case 'clear':
+                    room.furniture = [];
+                    nextId = 1;
+                    drawRoom();
+                    log('Cleared all furniture.');
+                    break;
 
-RENDERING REQUIREMENTS:
-- Professional interior photography style
-- Realistic materials and textures
-- Natural lighting from windows or ceiling fixtures
-- Accurate spatial relationships and proportions
-- Modern, clean aesthetic
-- High detail and photorealistic quality
-- Proper shadows and ambient occlusion
-- Camera angle: eye-level perspective view showing the full room layout
+                case 'generate':
+                    const view = parts[1] || 'front';
+                    const prompt = generatePrompt(view);
+                    promptOutput.innerText = prompt;
+                    log('Generated prompt (copied to output area).');
+                    break;
 
-Please generate a high-quality 3D render that accurately reflects this floor plan with realistic furniture placement and room proportions.`;
+                default:
+                    log('Unknown command. Type "help" for list.');
+            }
+        }
 
-  print('=== GEMINI PROMPT ===', 'info');
-  print(prompt);
-  print('');
-  print('Copied to clipboard!', 'success');
-  navigator.clipboard.writeText(prompt);
-}
+        // Event listener for input
+        cliInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const cmd = cliInput.value.trim();
+                if (cmd) {
+                    log('$ ' + cmd);
+                    handleCommand(cmd);
+                }
+                cliInput.value = '';
+            }
+        });
 
-function resetRoom() {
-  furniture = [];
-  selectedFurniture = null;
-  print('Room cleared.', 'success');
-  drawRoom();
-}
-
-function clearRoom() {
-  resetRoom();
-}
-
-// Drawing functions
-function drawRoom() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  const scale = Math.min(canvas.width / room.width, canvas.height / room.depth) * 0.9;
-  const offsetX = (canvas.width - room.width * scale) / 2;
-  const offsetY = (canvas.height - room.depth * scale) / 2;
-  
-  // Draw room outline
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(offsetX, offsetY, room.width * scale, room.depth * scale);
-  
-  // Draw furniture
-  furniture.forEach(item => {
-    const isSelected = selectedFurniture && selectedFurniture.id === item.id;
-    
-    ctx.save();
-    ctx.translate(offsetX + item.x * scale, offsetY + item.z * scale);
-    ctx.rotate((item.rotation * Math.PI) / 180);
-    
-    const w = item.w * scale;
-    const d = item.d * scale;
-    
-    ctx.fillStyle = isSelected ? '#4169e1' : item.color;
-    ctx.fillRect(-w/2, -d/2, w, d);
-    
-    ctx.strokeStyle = '#00ff41';
-    ctx.lineWidth = isSelected ? 2 : 1;
-    ctx.strokeRect(-w/2, -d/2, w, d);
-    
-    // Draw ID
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px Courier New';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(item.id.toString(), 0, 0);
-    
-    ctx.restore();
-  });
-}
-
-// Mouse interaction
-canvas.addEventListener('mousedown', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  
-  const scale = Math.min(canvas.width / room.width, canvas.height / room.depth) * 0.9;
-  const offsetX = (canvas.width - room.width * scale) / 2;
-  const offsetY = (canvas.height - room.depth * scale) / 2;
-  
-  selectedFurniture = null;
-  
-  for (let i = furniture.length - 1; i >= 0; i--) {
-    const item = furniture[i];
-    const x = offsetX + item.x * scale;
-    const y = offsetY + item.z * scale;
-    const w = item.w * scale / 2;
-    const d = item.d * scale / 2;
-    
-    if (mx >= x - w && mx <= x + w && my >= y - d && my <= y + d) {
-      selectedFurniture = item;
-      dragging = true;
-      dragOffset = { x: mx - x, y: my - y };
-      break;
-    }
-  }
-  
-  drawRoom();
-});
-
-canvas.addEventListener('mousemove', (e) => {
-  if (!dragging || !selectedFurniture) return;
-  
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  
-  const scale = Math.min(canvas.width / room.width, canvas.height / room.depth) * 0.9;
-  const offsetX = (canvas.width - room.width * scale) / 2;
-  const offsetY = (canvas.height - room.depth * scale) / 2;
-  
-  selectedFurniture.x = Math.max(0, Math.min(room.width, (mx - offsetX - dragOffset.x) / scale));
-  selectedFurniture.z = Math.max(0, Math.min(room.depth, (my - offsetY - dragOffset.y) / scale));
-  
-  drawRoom();
-});
-
-canvas.addEventListener('mouseup', () => {
-  dragging = false;
-});
-
-// Command processing
-input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    const cmd = input.value.trim();
-    if (cmd) {
-      print(`$ ${cmd}`, 'prompt');
-      const parts = cmd.split(/\s+/);
-      const command = parts[0].toLowerCase();
-      const args = parts.slice(1);
-      
-      if (commands[command]) {
-        commands[command](args);
-      } else {
-        print(`Unknown command: ${command}. Type 'help' for commands.`, 'error');
-      }
-    }
-    input.value = '';
-  }
-});
-
-// Initialize
-showHelp();
-drawRoom();
-</script>
+        // Initial draw
+        drawRoom();
+        log('Welcome to Room Designer CLI. Type "help" for commands.');
+    </script>
 </body>
 </html>
