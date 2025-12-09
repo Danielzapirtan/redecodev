@@ -493,562 +493,124 @@
                     }
                 });
             }
- setupCLI() {
-    // Bind methods to this instance to maintain proper context
-    this.cliCommands = {
-        help: (args) => {
-            this.cliOutput(`
-Available commands:
-- help: Show this help
-- clear: Clear all furniture
-- resize <width> <height>: Resize room
-- add <type> <width> <height>: Add furniture
-- list: List all furniture
-- select <id>: Select furniture by ID
-- delete: Delete selected furniture
-- move <x> <y>: Move selected furniture
-- roominfo: Show room information
-- save: Save room layout (console)
-- load: Load room layout (console)
-            `, 'info');
-        },
-        clear: (args) => {
-            this.clearRoom();
-            this.cliOutput('Room cleared', 'success');
-        },
-        resize: (args) => {
-            if (args && args.length >= 2) {
-                this.roomWidth = parseInt(args[0]);
-                this.roomHeight = parseInt(args[1]);
-                document.getElementById('roomWidth').value = this.roomWidth;
-                document.getElementById('roomHeight').value = this.roomHeight;
-                this.resizeRoom();
-                this.cliOutput(`Room resized to ${this.roomWidth}x${this.roomHeight}`, 'success');
-            } else {
-                this.cliOutput('Usage: resize <width> <height>', 'error');
-            }
-        },
-        add: (args) => {
-            if (args && args.length >= 3) {
-                const type = args[0];
-                const width = parseInt(args[1]);
-                const height = parseInt(args[2]);
-                this.addFurniture(type, width, height);
-                this.cliOutput(`Added ${type} (${width}x${height})`, 'success');
-            } else {
-                this.cliOutput('Usage: add <type> <width> <height>', 'error');
-            }
-        },
-        list: (args) => {
-            if (this.furniture.length === 0) {
-                this.cliOutput('No furniture in room', 'info');
-                return;
-            }
-            
-            let output = 'Furniture in room:\n';
-            this.furniture.forEach((f, i) => {
-                output += `[${i}] ${f.type} at (${f.x},${f.y}) size ${f.width}x${f.height}\n`;
-            });
-            this.cliOutput(output, 'info');
-        },
-        select: (args) => {
-            if (args && args.length >= 1) {
-                const id = parseInt(args[0]);
-                if (id >= 0 && id < this.furniture.length) {
-                    this.selectFurniture(this.furniture[id]);
-                    this.cliOutput(`Selected furniture ${id}: ${this.furniture[id].type}`, 'success');
-                } else {
-                    this.cliOutput(`Invalid furniture ID: ${id}`, 'error');
-                }
-            } else {
-                this.cliOutput('Usage: select <id>', 'error');
-            }
-        },
-        delete: (args) => {
-            if (this.selectedFurniture) {
-                const type = this.selectedFurniture.type;
-                this.deleteSelectedFurniture();
-                this.cliOutput(`Deleted ${type}`, 'success');
-            } else {
-                this.cliOutput('No furniture selected', 'error');
-            }
-        },
-        move: (args) => {
-            if (args && args.length >= 2 && this.selectedFurniture) {
-                const newX = parseInt(args[0]);
-                const newY = parseInt(args[1]);
-                const dx = newX - this.selectedFurniture.x;
-                const dy = newY - this.selectedFurniture.y;
-                this.moveSelectedFurniture(dx, dy);
-                this.cliOutput(`Moved to (${this.selectedFurniture.x},${this.selectedFurniture.y})`, 'success');
-            } else if (!this.selectedFurniture) {
-                this.cliOutput('No furniture selected', 'error');
-            } else {
-                this.cliOutput('Usage: move <x> <y>', 'error');
-            }
-        },
-        roominfo: (args) => {
-            this.cliOutput(`
-Room Information:
-- Dimensions: ${this.roomWidth} x ${this.roomHeight} grid units
-- Furniture count: ${this.furniture.length}
-- Grid size: ${this.gridSize}px per unit
-- Total area: ${this.roomWidth * this.roomHeight} grid units
-            `, 'info');
-        },
-        save: (args) => {
-            const layout = {
-                room: { width: this.roomWidth, height: this.roomHeight },
-                furniture: this.furniture
-            };
-            console.log('Room layout (copy this):');
-            console.log(JSON.stringify(layout, null, 2));
-            this.cliOutput('Layout saved to console. Copy the JSON output.', 'success');
-        },
-        load: (args) => {
-            this.cliOutput('To load a layout, use the browser console:\n1. Copy your layout JSON\n2. In console: roomDesigner.loadLayout(yourJson)\n3. Or: roomDesigner.furniture = yourJson.furniture; roomDesigner.renderFurniture();', 'info');
-        }
-    };
-}
+           setupCLI() {
+              // Bind methods to this instance to maintain proper context
+              this.cliCommands = {
+                  help: (args) => {
+                      this.cliOutput(`
+          Available commands:
+          - help: Show this help
+          - clear: Clear all furniture
+          - resize <width> <height>: Resize room
+          - add <type> <width> <height>: Add furniture
+          - list: List all furniture
+          - select <id>: Select furniture by ID
+          - delete: Delete selected furniture
+          - move <x> <y>: Move selected furniture
+          - roominfo: Show room information
+          - save: Save room layout (console)
+          - load: Load room layout (console)
+                      `, 'info');
+                  },
+                  clear: (args) => {
+                      this.clearRoom();
+                      this.cliOutput('Room cleared', 'success');
+                  },
+                  resize: (args) => {
+                      if (args && args.length >= 2) {
+                          this.roomWidth = parseInt(args[0]);
+                          this.roomHeight = parseInt(args[1]);
+                          document.getElementById('roomWidth').value = this.roomWidth;
+                          document.getElementById('roomHeight').value = this.roomHeight;
+                          this.resizeRoom();
+                          this.cliOutput(`Room resized to ${this.roomWidth}x${this.roomHeight}`, 'success');
+                      } else {
+                          this.cliOutput('Usage: resize <width> <height>', 'error');
+                      }
+                  },
+                  add: (args) => {
+                      if (args && args.length >= 3) {
+                          const type = args[0];
+                          const width = parseInt(args[1]);
+                          const height = parseInt(args[2]);
+                          this.addFurniture(type, width, height);
+                          this.cliOutput(`Added ${type} (${width}x${height})`, 'success');
+                      } else {
+                          this.cliOutput('Usage: add <type> <width> <height>', 'error');
+                      }
+                  },
+                  list: (args) => {
+                      if (this.furniture.length === 0) {
+                          this.cliOutput('No furniture in room', 'info');
+                          return;
+                      }
+                      
+                      let output = 'Furniture in room:\n';
+                      this.furniture.forEach((f, i) => {
+                          output += `[${i}] ${f.type} at (${f.x},${f.y}) size ${f.width}x${f.height}\n`;
+                      });
+                      this.cliOutput(output, 'info');
+                  },
+                  select: (args) => {
+                      if (args && args.length >= 1) {
+                          const id = parseInt(args[0]);
+                          if (id >= 0 && id < this.furniture.length) {
+                              this.selectFurniture(this.furniture[id]);
+                              this.cliOutput(`Selected furniture ${id}: ${this.furniture[id].type}`, 'success');
+                          } else {
+                              this.cliOutput(`Invalid furniture ID: ${id}`, 'error');
+                          }
+                      } else {
+                          this.cliOutput('Usage: select <id>', 'error');
+                      }
+                  },
+                  delete: (args) => {
+                      if (this.selectedFurniture) {
+                          const type = this.selectedFurniture.type;
+                          this.deleteSelectedFurniture();
+                          this.cliOutput(`Deleted ${type}`, 'success');
+                      } else {
+                          this.cliOutput('No furniture selected', 'error');
+                      }
+                  },
+                  move: (args) => {
+                      if (args && args.length >= 2 && this.selectedFurniture) {
+                          const newX = parseInt(args[0]);
+                          const newY = parseInt(args[1]);
+                          const dx = newX - this.selectedFurniture.x;
+                          const dy = newY - this.selectedFurniture.y;
+                          this.moveSelectedFurniture(dx, dy);
+                          this.cliOutput(`Moved to (${this.selectedFurniture.x},${this.selectedFurniture.y})`, 'success');
+                      } else if (!this.selectedFurniture) {
+                          this.cliOutput('No furniture selected', 'error');
+                      } else {
+                          this.cliOutput('Usage: move <x> <y>', 'error');
+                      }
+                  },
+                  roominfo: (args) => {
+                      this.cliOutput(`
+          Room Information:
+          - Dimensions: ${this.roomWidth} x ${this.roomHeight} grid units
+          - Furniture count: ${this.furniture.length}
+          - Grid size: ${this.gridSize}px per unit
+          - Total area: ${this.roomWidth * this.roomHeight} grid units
+                      `, 'info');
+                  },
+                  save: (args) => {
+                      const layout = {
+                          room: { width: this.roomWidth, height: this.roomHeight },
+                          furniture: this.furniture
+                      };
+                      console.log('Room layout (copy this):');
+                      console.log(JSON.stringify(layout, null, 2));
+                      this.cliOutput('Layout saved to console. Copy the JSON output.', 'success');
+                  },
+                  load: (args) => {
+                      this.cliOutput('To load a layout, use the browser console:\n1. Copy your layout JSON\n2. In console: roomDesigner.loadLayout(yourJson)\n3. Or: roomDesigner.furniture = yourJson.furniture; roomDesigner.renderFurniture();', 'info');
+                  }
+              };
+          }
            
-/*setupCLI() {
-    this.cliCommands = {
-        help: () => {
-            this.cliOutput(`
-Available commands:
-- help: Show this help
-- clear: Clear all furniture
-- resize <width> <height>: Resize room
-- add <type> <width> <height>: Add furniture
-- list: List all furniture
-- select <id>: Select furniture by ID
-- delete: Delete selected furniture
-- move <x> <y>: Move selected furniture
-- roominfo: Show room information
-- save: Save room layout (console)
-- load: Load room layout (console)
-            `);
-        },
-        clear: () => {
-            this.clearRoom();
-            this.cliOutput('Room cleared', 'success');
-        },
-        resize: (args) => {
-            if (args.length >= 2) {
-                this.roomWidth = parseInt(args[0]);
-                this.roomHeight = parseInt(args[1]);
-                this.resizeRoom();
-                this.cliOutput(`Room resized to ${this.roomWidth}x${this.roomHeight}`, 'success');
-            } else {
-                this.cliOutput('Usage: resize <width> <height>', 'error');
-            }
-        },
-        add: (args) => {
-            if (args.length >= 3) {
-                const type = args[0];
-                const width = parseInt(args[1]);
-                const height = parseInt(args[2]);
-                this.addFurniture(type, width, height);
-                this.cliOutput(`Added ${type} (${width}x${height})`, 'success');
-            } else {
-                this.cliOutput('Usage: add <type> <width> <height>', 'error');
-            }
-        },
-        list: () => {
-            if (this.furniture.length === 0) {
-                this.cliOutput('No furniture in room');
-                return;
-            }
-            
-            let output = 'Furniture in room:\n';
-            this.furniture.forEach((f, i) => {
-                output += `[${i}] ${f.type} at (${f.x},${f.y}) size ${f.width}x${f.height}\n`;
-            });
-            this.cliOutput(output);
-        },
-        select: (args) => {
-            if (args.length >= 1) {
-                const id = parseInt(args[0]);
-                if (id >= 0 && id < this.furniture.length) {
-                    this.selectFurniture(this.furniture[id]);
-                    this.cliOutput(`Selected furniture ${id}: ${this.furniture[id].type}`, 'success');
-                } else {
-                    this.cliOutput(`Invalid furniture ID: ${id}`, 'error');
-                }
-            } else {
-                this.cliOutput('Usage: select <id>', 'error');
-            }
-        },
-        delete: () => {
-            if (this.selectedFurniture) {
-                this.deleteSelectedFurniture();
-            } else {
-                this.cliOutput('No furniture selected', 'error');
-            }
-        },
-        move: (args) => {
-            if (args.length >= 2 && this.selectedFurniture) {
-                const dx = parseInt(args[0]) - this.selectedFurniture.x;
-                const dy = parseInt(args[1]) - this.selectedFurniture.y;
-                this.moveSelectedFurniture(dx, dy);
-                this.cliOutput(`Moved to (${this.selectedFurniture.x},${this.selectedFurniture.y})`, 'success');
-            } else if (!this.selectedFurniture) {
-                this.cliOutput('No furniture selected', 'error');
-            } else {
-                this.cliOutput('Usage: move <x> <y>', 'error');
-            }
-        },
-        roominfo: () => {
-            this.cliOutput(`
-Room Information:
-- Dimensions: ${this.roomWidth} x ${this.roomHeight} grid units
-- Furniture count: ${this.furniture.length}
-- Grid size: ${this.gridSize}px per unit
-- Total area: ${this.roomWidth * this.roomHeight} grid units
-            `);
-        },
-        save: () => {
-            const layout = {
-                room: { width: this.roomWidth, height: this.roomHeight },
-                furniture: this.furniture
-            };
-            console.log('Room layout (copy this):');
-            console.log(JSON.stringify(layout, null, 2));
-            this.cliOutput('Layout saved to console. Copy the JSON output.', 'success');
-        },
-        load: () => {
-            this.cliOutput('To load a layout, use the browser console:\n1. Copy your layout JSON\n2. In console: roomDesigner.loadLayout(yourJson)\n3. Or: roomDesigner.furniture = yourJson.furniture; roomDesigner.renderFurniture();');
-        }
-    };
-}
-            setupCLI() {
-                this.cliCommands = {
-                    help: () => this.cliOutput(`
-Available commands:
-- help: Show this help
-- clear: Clear all furniture
-- resize <width> <height>: Resize room
-- add <type> <width> <height>: Add furniture
-- list: List all furniture
-- select <id>: Select furniture by ID
-- delete: Delete selected furniture
-- move <x> <y>: Move selected furniture
-- roominfo: Show room information
-- save: Save room layout (console)
-- load: Load room layout (console)
-                    `),
-                    clear: () =>
-                      this.clearRoom(),
-                    resize: (args) => {
-                        if (args.length >= 2) {
-                            this.roomWidth = parseInt(args[0]);
-                            this.roomHeight = parseInt(args[1]);
-                            this.resizeRoom();
-                            this.cliOutput(`Room resized to ${this.roomWidth}x${this.roomHeight}`);
-                        } else {
-                            this.cliOutput('Usage: resize <width> <height>', 'error');
-                        }
-                    },
-                    add: (args) => {
-                        if (args.length >= 3) {
-                            const type = args[0];
-                            const width = parseInt(args[1]);
-                            const height = parseInt(args[2]);
-                            this.addFurniture(type, width, height);
-                            this.cliOutput(`Added ${type} (${width}x${height})`);
-                        } else {
-                            this.cliOutput('Usage: add <type> <width> <height>', 'error');
-                        }
-                    },
-                    list: () => {
-                        if (this.furniture.length === 0) {
-                            this.cliOutput('No furniture in room');
-                            return;
-                        }
-                        
-                        let output = 'Furniture in room:\n';
-                        this.furniture.forEach((f, i) => {
-                            output += `[${i}] ${f.type} at (${f.x},${f.y}) size ${f.width}x${f.height}\n`;
-                        });
-                        this.cliOutput(output);
-                    },
-                    select: (args) => {
-                        if (args.length >= 1) {
-                            const id = parseInt(args[0]);
-                            if (id >= 0 && id < this.furniture.length) {
-                                this.selectFurniture(this.furniture[id]);
-                                this.cliOutput(`Selected furniture ${id}: ${this.furniture[id].type}`);
-                            } else {
-                                this.cliOutput(`Invalid furniture ID: ${id}`, 'error');
-                            }
-                        } else {
-                            this.cliOutput('Usage: select <id>', 'error');
-                        }
-                    },
-                    delete: () => this.deleteSelectedFurniture(),
-                    move: (args) => {
-                        if (args.length >= 2 && this.selectedFurniture) {
-                            const x = parseInt(args[0]);
-                            const y = parseInt(args[1]);
-                            this.moveSelectedFurniture(x, y);
-                            this.cliOutput(`Moved to (${this.selectedFurniture.x},${this.selectedFurniture.y})`);
-                        } else if (!this.selectedFurniture) {
-                            this.cliOutput('No furniture selected', 'error');
-                        } else {
-                            this.cliOutput('Usage: move <x> <y>', 'error');
-                        }
-                    },
-                    roominfo: () => {
-                        this.cliOutput(`
-Room Information:
-- Dimensions: ${this.roomWidth} x ${this.roomHeight} grid units
-- Furniture count: ${this.furniture.length}
-- Grid size: ${this.gridSize}px per unit
-- Total area: ${this.roomWidth * this.roomHeight} grid units
-                        `);
-                    },
-                    save: () => {
-                        const layout = {
-                            room: { width: this.roomWidth, height: this.roomHeight },
-                            furniture: this.furniture
-                        };
-                        console.log('Room layout (copy this):');
-                        console.log(JSON.stringify(layout, null, 2));
-                        this.cliOutput('Layout saved to console. Copy the JSON output.');
-                    },
-                    load: () => {
-                        this.cliOutput('To load a layout, use the browser console:\n1. Copy your layout JSON\n2. In console: roomDesigner.loadLayout(yourJson)\n3. Or: roomDesigner.furniture = yourJson.furniture; roomDesigner.renderFurniture();');
-                    }
-                };
-            }
-*/
-            
-            setupPromptEngineer() {
-                document.getElementById('generatePrompt').addEventListener('click', () => this.generatePrompt());
-                document.getElementById('copyPrompt').addEventListener('click', () => this.copyPrompt());
-                
-                // Template buttons
-                document.querySelectorAll('[data-template]').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const template = e.target.getAttribute('data-template');
-                        this.applyPromptTemplate(template);
-                    });
-                });
-            }
-            
-            resizeRoom() {
-                this.roomWidth = parseInt(document.getElementById('roomWidth').value);
-                this.roomHeight = parseInt(document.getElementById('roomHeight').value);
-                
-                this.canvas.style.width = `${this.roomWidth * this.gridSize}px`;
-                this.canvas.style.height = `${this.roomHeight * this.gridSize}px`;
-                
-                // Update grid background
-                this.grid.style.backgroundSize = `${this.gridSize}px ${this.gridSize}px`;
-                
-                this.updateStatus();
-            }
-            
-            clearRoom() {
-                this.furniture = [];
-                this.selectedFurniture = null;
-                this.renderFurniture();
-                this.cliOutput('Room cleared');
-            }
-            
-            addFurniture(type, width, height) {
-                const furniture = {
-                    id: this.furniture.length,
-                    type: type,
-                    x: Math.floor(this.roomWidth / 2 - width / 2),
-                    y: Math.floor(this.roomHeight / 2 - height / 2),
-                    width: width,
-                    height: height,
-                    color: this.getFurnitureColor(type)
-                };
-                
-                this.furniture.push(furniture);
-                this.renderFurniture();
-                this.selectFurniture(furniture);
-                this.updateStatus();
-            }
-            
-            getFurnitureColor(type) {
-                const colors = {
-                    sofa: '#3b82f6',
-                    table: '#10b981',
-                    bed: '#8b5cf6',
-                    chair: '#f59e0b',
-                    desk: '#6366f1',
-                    bookshelf: '#ef4444',
-                    lamp: '#fbbf24',
-                    tv: '#64748b',
-                    rug: '#14b8a6',
-                    plant: '#22c55e',
-                    custom: '#94a3b8'
-                };
-                
-                return colors[type] || '#94a3b8';
-            }
-            
-            renderFurniture() {
-                // Clear existing furniture
-                document.querySelectorAll('.furniture').forEach(el => el.remove());
-                document.querySelectorAll('.dimension-display').forEach(el => el.remove());
-                
-                // Render each furniture item
-                this.furniture.forEach((f, index) => {
-                    const el = document.createElement('div');
-                    el.className = 'furniture';
-                    el.id = `furniture-${index}`;
-                    el.textContent = f.type;
-                    el.style.left = `${f.x * this.gridSize}px`;
-                    el.style.top = `${f.y * this.gridSize}px`;
-                    el.style.width = `${f.width * this.gridSize}px`;
-                    el.style.height = `${f.height * this.gridSize}px`;
-                    el.style.backgroundColor = `${f.color}40`;
-                    el.style.borderColor = f.color;
-                    el.style.color = f.color;
-                    
-                    if (f === this.selectedFurniture) {
-                        el.classList.add('selected');
-                    }
-                    
-                    this.canvas.appendChild(el);
-                    
-                    // Add dimension display
-                    if (f.width > 1 || f.height > 1) {
-                        const dim = document.createElement('div');
-                        dim.className = 'dimension-display';
-                        dim.textContent = `${f.width}×${f.height}`;
-                        dim.style.left = `${(f.x * this.gridSize) + 5}px`;
-                        dim.style.top = `${(f.y * this.gridSize) + 5}px`;
-                        this.canvas.appendChild(dim);
-                    }
-                });
-            }
-            
-            handleCanvasMouseDown(e) {
-                const rect = this.canvas.getBoundingClientRect();
-                const x = Math.floor((e.clientX - rect.left) / this.gridSize);
-                const y = Math.floor((e.clientY - rect.top) / this.gridSize);
-                
-                // Check if clicking on furniture
-                for (let i = this.furniture.length - 1; i >= 0; i--) {
-                    const f = this.furniture[i];
-                    if (x >= f.x && x < f.x + f.width && y >= f.y && y < f.y + f.height) {
-                        this.selectFurniture(f);
-                        this.dragging = true;
-                        this.dragOffset.x = x - f.x;
-                        this.dragOffset.y = y - f.y;
-                        return;
-                    }
-                }
-                
-                // Clicked on empty space
-                this.deselectFurniture();
-            }
-            
-            handleCanvasMouseMove(e) {
-                const rect = this.canvas.getBoundingClientRect();
-                const x = Math.floor((e.clientX - rect.left) / this.gridSize);
-                const y = Math.floor((e.clientY - rect.top) / this.gridSize);
-                
-                // Update status with mouse position
-                this.statusBar.children[1].textContent = `Grid: ${this.gridSize}px | X: ${x}, Y: ${y}`;
-                
-                // Handle dragging
-                if (this.dragging && this.selectedFurniture) {
-                    const newX = Math.max(0, Math.min(x - this.dragOffset.x, this.roomWidth - this.selectedFurniture.width));
-                    const newY = Math.max(0, Math.min(y - this.dragOffset.y, this.roomHeight - this.selectedFurniture.height));
-                    
-                    this.selectedFurniture.x = newX;
-                    this.selectedFurniture.y = newY;
-                    this.renderFurniture();
-                }
-            }
-            
-            handleCanvasMouseUp() {
-                this.dragging = false;
-            }
-            
-            handleCanvasClick(e) {
-                // Already handled in mousedown
-            }
-            
-            selectFurniture(furniture) {
-                this.selectedFurniture = furniture;
-                this.renderFurniture();
-                this.updateStatus();
-            }
-            
-            deselectFurniture() {
-                this.selectedFurniture = null;
-                this.renderFurniture();
-                this.updateStatus();
-            }
-            
-            deleteSelectedFurniture() {
-                if (this.selectedFurniture) {
-                    const index = this.furniture.indexOf(this.selectedFurniture);
-                    if (index > -1) {
-                        this.furniture.splice(index, 1);
-                        this.cliOutput(`Deleted ${this.selectedFurniture.type}`);
-                        this.selectedFurniture = null;
-                        this.renderFurniture();
-                        this.updateStatus();
-                    }
-                }
-            }
-            
-            moveSelectedFurniture(dx, dy) {
-                if (this.selectedFurniture) {
-                    const newX = Math.max(0, Math.min(this.selectedFurniture.x + dx, this.roomWidth - this.selectedFurniture.width));
-                    const newY = Math.max(0, Math.min(this.selectedFurniture.y + dy, this.roomHeight - this.selectedFurniture.height));
-                    
-                    this.selectedFurniture.x = newX;
-                    this.selectedFurniture.y = newY;
-                    this.renderFurniture();
-                    this.updateStatus();
-                }
-            }
-            
-            updateStatus() {
-                const furnitureCount = this.furniture.length;
-                const selectedType = this.selectedFurniture ? this.selectedFurniture.type : 'None';
-                this.statusBar.children[0].textContent = 
-                    `Room: ${this.roomWidth}×${this.roomHeight} | Furniture: ${furnitureCount} | Selected: ${selectedType}`;
-            }
-            
-            // CLI Functions
-            executeCLICommands() {
-                const commandInput = document.getElementById('commandInput').value.trim();
-                if (!commandInput) return;
-                
-                const commands = commandInput.split('\n');
-                commands.forEach(cmd => {
-                    this.executeCLICommand(cmd.trim());
-                });
-            }
-            
-executeCLICommand(cmd) {
-    if (!cmd) return;
-    
-    // Add to history
-    this.commandHistory.push(cmd);
-    this.cliOutput(`> ${cmd}`, 'cmd');
-    
-    const parts = cmd.split(' ');
-    const command = parts[0].toLowerCase();
-    const args = parts.slice(1);
-    
-    if (this.cliCommands[command]) {
-        this.cliCommands[command](args);
-    } else {
-        this.cliOutput(`Unknown command: ${command}. Type 'help' for available commands.`, 'error');
-    }
-}
-
             cliOutput(message, type = 'info') {
                 const log = document.querySelector('.log');
                 const entry = document.createElement('div');
