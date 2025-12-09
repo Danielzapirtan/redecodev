@@ -821,7 +821,7 @@ Room Information:
             }
             
             cliOutput(message, type = 'info') {
-                const log = document.querySelector('.log');
+                const log = document.querySelector('log');
                 const entry = document.createElement('div');
                 entry.className = `log-entry log-${type}`;
                 entry.textContent = message.trim();
