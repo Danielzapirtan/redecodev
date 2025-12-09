@@ -824,7 +824,7 @@ Room Information:
                 const log = document.querySelector('.log');
                 const entry = document.createElement('div');
                 entry.className = `log-entry log-${type}`;
-                entry.innerHTML = `${message.trim()}`;
+                entry.innerHTML = `${message}`;
                 log.appendChild(entry);
                 log.scrollTop = log.scrollHeight;
             }
