@@ -1,220 +1,1553 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<title>CLI Room Designer + Gemini Prompt Generator</title>
-<style>
-    body { 
-        font-family: monospace; 
-        display: flex; 
-        margin: 0; 
-        height: 100vh;
-        background: #111;
-        color: #0f0;
-    }
-    #left {
-        width: 350px;
-        padding: 10px;
-        border-right: 2px solid #0f0;
-        display: flex;
-        flex-direction: column;
-    }
-    #terminal {
-        flex: 1;
-        background: black;
-        padding: 10px;
-        overflow-y: auto;
-        border: 1px solid #0f0;
-        white-space: pre-wrap;
-    }
-    #input {
-        width: 100%;
-        padding: 10px;
-        border: none;
-        border-top: 1px solid #0f0;
-        background: #000;
-        color: #0f0;
-        font-family: monospace;
-    }
-    #canvas {
-        flex: 1;
-        background: #222;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Room Decorator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        #ar-canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* UI Container */
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        #ui-container > * {
+            pointer-events: auto;
+        }
+        
+        /* Top Bar */
+        #top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #status {
+            color: white;
+            font-size: 14px;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 12px;
+            border-radius: 20px;
+        }
+        
+        #exit-btn {
+            background: rgba(255,59,48,0.9);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* Furniture Menu */
+        #furniture-menu {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        #furniture-menu.active {
+            display: flex;
+        }
+        
+        #furniture-scroll {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 0 20px 10px 20px;
+            max-width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        #furniture-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .furniture-item {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 12px;
+            min-width: 100px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .furniture-item:active {
+            transform: scale(0.95);
+        }
+        
+        .furniture-item.selected {
+            background: rgba(0,122,255,0.95);
+            color: white;
+        }
+        
+        .furniture-icon {
+            font-size: 36px;
+            margin-bottom: 5px;
+        }
+        
+        .furniture-name {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        /* Controls */
+        #controls {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        #controls.active {
+            display: flex;
+        }
+        
+        .control-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.95);
+            border: none;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .control-btn.danger {
+            background: rgba(255,59,48,0.95);
+            color: white;
+        }
+        
+        /* Start Screen */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            z-index: 100;
+        }
+        
+        #start-screen h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        #start-screen p {
+            font-size: 16px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        #start-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        
+        #start-btn:active {
+            transform: scale(0.95);
+        }
+        
+        #start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Instructions */
+        #instructions {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 90%;
+            display: none;
+        }
+        
+        #instructions.active {
+            display: block;
+        }
+        
+        /* Color Picker */
+        #color-picker {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 12px;
+            display: none;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        #color-picker.active {
+            display: flex;
+        }
+        
+        .color-option {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 3px solid white;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .color-option.selected {
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px #007aff;
+        }
+
+        .debug {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            color: #0f0;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 5px;
+            max-width: 300px;
+            word-wrap: break-word;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-
-<div id="left">
-    <div id="terminal"></div>
-    <input id="input" placeholder="Type command (help)" autofocus />
-</div>
-
-<canvas id="canvas" width="900" height="800"></canvas>
-
-<script>
-// ----------------------------
-// State
-// ----------------------------
-const terminal = document.getElementById("terminal");
-const input = document.getElementById("input");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-let furniture = [];
-let room = { width: 900, height: 800 };
-
-// ----------------------------
-// CLI Output Helper
-// ----------------------------
-function log(msg) {
-    terminal.textContent += msg + "\n";
-    terminal.scrollTop = terminal.scrollHeight;
-}
-
-// ----------------------------
-// Drawing
-// ----------------------------
-function draw() {
-    ctx.fillStyle = "#222";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw furniture
-    furniture.forEach(f => {
-        ctx.fillStyle = f.color;
-        ctx.fillRect(f.x, f.y, f.w, f.h);
-        ctx.fillStyle = "#fff";
-        ctx.fillText(f.name, f.x + 4, f.y + 14);
-    });
-}
-
-// ----------------------------
-// Commands
-// ----------------------------
-function execute(cmd) {
-    const parts = cmd.trim().split(/\s+/);
-    const c = parts[0];
-
-    switch(c) {
-
-        case "help":
-            log(`Commands:
-  add <name> <x> <y> <w> <h> <color>
-  move <name> <dx> <dy>
-  resize <name> <w> <h>
-  delete <name>
-  list
-  clear
-  prompt  → generate Gemini 3D prompt
-  help`);
-            break;
-
-        case "add": {
-            const [_, name, x, y, w, h, color="#44f"] = parts;
-            if (!name || !x || !y || !w || !h) { log("Usage: add <name> <x> <y> <w> <h> <color>"); break; }
-            furniture.push({
-                name, 
-                x: +x, y: +y, 
-                w: +w, h: +h,
-                color
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1>🏠 AR Room Decorator</h1>
+        <p>Place and arrange furniture in your room using augmented reality</p>
+        <button id="start-btn">Start Decorating</button>
+        <div id="debug-info" class="debug"></div>
+    </div>
+    
+    <!-- AR Canvas -->
+    <canvas id="ar-canvas"></canvas>
+    
+    <!-- UI Overlay -->
+    <div id="ui-container">
+        <!-- Top Bar -->
+        <div id="top-bar" style="display: none;">
+            <div id="status">Initializing...</div>
+            <button id="exit-btn">Exit AR</button>
+        </div>
+        
+        <!-- Instructions -->
+        <div id="instructions">
+            Tap on the floor to place furniture
+        </div>
+        
+        <!-- Furniture Menu -->
+        <div id="furniture-menu">
+            <div id="furniture-scroll"></div>
+        </div>
+        
+        <!-- Controls -->
+        <div id="controls">
+            <button class="control-btn" id="rotate-btn" title="Rotate">🔄</button>
+            <button class="control-btn" id="color-btn" title="Change Color">🎨</button>
+            <button class="control-btn danger" id="delete-btn" title="Delete">🗑️</button>
+        </div>
+        
+        <!-- Color Picker -->
+        <div id="color-picker"></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script type="module">
+        const DEBUG = false; // Set to true to see debug messages
+        
+        function log(msg) {
+            console.log(msg);
+            if (DEBUG) {
+                const debugDiv = document.getElementById('debug-info');
+                debugDiv.style.display = 'block';
+                debugDiv.innerHTML += msg + '<br>';
+            }
+        }
+        
+        // Enhanced furniture catalog with realistic dimensions
+        const furnitureData = [
+            { 
+                id: 'sofa', 
+                name: 'Modern Sofa', 
+                icon: '🛋️', 
+                width: 2.0, 
+                height: 0.8, 
+                depth: 0.9, 
+                color: 0x8B7355,
+                fabric: true
+            },
+            { 
+                id: 'armchair', 
+                name: 'Armchair', 
+                icon: '🪑', 
+                width: 0.85, 
+                height: 1.0, 
+                depth: 0.9, 
+                color: 0x654321,
+                fabric: true
+            },
+            { 
+                id: 'dining_table', 
+                name: 'Dining Table', 
+                icon: '🍽️', 
+                width: 1.4, 
+                height: 0.75, 
+                depth: 0.9, 
+                color: 0x8B4513,
+                wood: true
+            },
+            { 
+                id: 'king_bed', 
+                name: 'King Bed', 
+                icon: '🛏️', 
+                width: 2.0, 
+                height: 0.5, 
+                depth: 2.1, 
+                color: 0xFFFFFF,
+                fabric: true
+            },
+            { 
+                id: 'office_desk', 
+                name: 'Office Desk', 
+                icon: '💼', 
+                width: 1.6, 
+                height: 0.75, 
+                depth: 0.8, 
+                color: 0x4A3728,
+                wood: true
+            },
+            { 
+                id: 'bookshelf', 
+                name: 'Bookshelf', 
+                icon: '📚', 
+                width: 0.9, 
+                height: 2.0, 
+                depth: 0.35, 
+                color: 0x654321,
+                wood: true
+            },
+            { 
+                id: 'floor_lamp', 
+                name: 'Floor Lamp', 
+                icon: '💡', 
+                width: 0.25, 
+                height: 2.0, 
+                depth: 0.25, 
+                color: 0x2F4F4F,
+                metal: true
+            },
+            { 
+                id: 'fiddle_leaf', 
+                name: 'Fiddle Leaf', 
+                icon: '🪴', 
+                width: 0.5, 
+                height: 1.8, 
+                depth: 0.5, 
+                color: 0x228B22,
+                plant: true
+            },
+            { 
+                id: 'entertainment_center', 
+                name: 'TV Stand', 
+                icon: '📺', 
+                width: 1.8, 
+                height: 0.6, 
+                depth: 0.45, 
+                color: 0x333333,
+                wood: true
+            },
+            { 
+                id: 'persian_rug', 
+                name: 'Persian Rug', 
+                icon: '🟫', 
+                width: 2.0, 
+                height: 0.02, 
+                depth: 1.4, 
+                color: 0x8B4513,
+                fabric: true
+            },
+            { 
+                id: 'coffee_table', 
+                name: 'Coffee Table', 
+                icon: '☕', 
+                width: 1.0, 
+                height: 0.4, 
+                depth: 0.6, 
+                color: 0x4A3728,
+                wood: true
+            },
+            { 
+                id: 'dresser', 
+                name: 'Dresser', 
+                icon: '👔', 
+                width: 1.2, 
+                height: 0.9, 
+                depth: 0.5, 
+                color: 0x8B7355,
+                wood: true
+            }
+        ];
+        
+        const colors = [
+            { name: 'Walnut', value: 0x4A3728 },
+            { name: 'Oak', value: 0x8B7355 },
+            { name: 'White', value: 0xF5F5F5 },
+            { name: 'Charcoal', value: 0x2F4F4F },
+            { name: 'Gray', value: 0x808080 },
+            { name: 'Navy', value: 0x2C3E50 },
+            { name: 'Emerald', value: 0x2ECC71 },
+            { name: 'Terracotta', value: 0xE67E22 },
+            { name: 'Blush', value: 0xFFB6C1 },
+            { name: 'Teal', value: 0x1ABC9C }
+        ];
+        
+        // State
+        let session = null;
+        let renderer, scene, camera;
+        let hitTestSource = null;
+        let hitTestSourceRequested = false;
+        let reticle = null;
+        let placedFurniture = [];
+        let selectedFurniture = null;
+        let selectedFurnitureType = null;
+        let controller = null;
+        
+        // UI Elements
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const topBar = document.getElementById('top-bar');
+        const statusDiv = document.getElementById('status');
+        const exitBtn = document.getElementById('exit-btn');
+        const furnitureMenu = document.getElementById('furniture-menu');
+        const furnitureScroll = document.getElementById('furniture-scroll');
+        const controls = document.getElementById('controls');
+        const instructions = document.getElementById('instructions');
+        const rotateBtn = document.getElementById('rotate-btn');
+        const colorBtn = document.getElementById('color-btn');
+        const deleteBtn = document.getElementById('delete-btn');
+        const colorPicker = document.getElementById('color-picker');
+        
+        // Material creation functions
+        function createWoodMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.7,
+                metalness: 0.2,
+                bumpScale: 0.002
             });
-            log(`Added ${name}`);
-            draw();
-            break;
         }
-
-        case "move": {
-            const [_, name, dx, dy] = parts;
-            const f = furniture.find(o => o.name === name);
-            if (!f) { log("Furniture not found"); break; }
-            f.x += +dx; f.y += +dy;
-            log(`Moved ${name}`);
-            draw();
-            break;
+        
+        function createFabricMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.9,
+                metalness: 0.0
+            });
         }
-
-        case "resize": {
-            const [_, name, w, h] = parts;
-            const f = furniture.find(o => o.name === name);
-            if (!f) { log("Furniture not found"); break; }
-            f.w = +w; f.h = +h;
-            log(`Resized ${name}`);
-            draw();
-            break;
+        
+        function createMetalMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.3,
+                metalness: 0.8
+            });
         }
-
-        case "delete": {
-            const [_, name] = parts;
-            furniture = furniture.filter(o => o.name !== name);
-            log(`Deleted ${name}`);
-            draw();
-            break;
+        
+        function createLeatherMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.5,
+                metalness: 0.1
+            });
         }
-
-        case "list":
-            log("Furniture:");
-            furniture.forEach(f => 
-                log(`  ${f.name}: x=${f.x}, y=${f.y}, w=${f.w}, h=${f.h}, color=${f.color}`));
-            break;
-
-        case "clear":
-            furniture = [];
-            log("Cleared all furniture");
-            draw();
-            break;
-
-        case "prompt":
-            log("Generated Prompt:\n" + generateGeminiPrompt());
-            break;
-
-        default:
-            log("Unknown command. Type 'help'");
-    }
-}
-
-// ----------------------------
-// Gemini Prompt Generation
-// ----------------------------
-function generateGeminiPrompt() {
-    const items = furniture.map(f =>
-        `${f.name}: positioned at (${f.x}, ${f.y}), size (${f.w}×${f.h})`
-    ).join("; ");
-
-return `
-Create a photorealistic 3D interior render of a room with the following layout:
-
-Room size: ${room.width} × ${room.height} cm (treat as proportions if scaled).
-
-Furniture objects and positions (top-down coordinates, origin at top-left):
-${items || "No furniture placed."}
-
-Rendering requirements:
-• Use realistic materials, global illumination, soft shadows.
-• Furniture should match described positions precisely.
-• Camera angle: 35–45° isometric perspective.
-• High fidelity textures for walls, floor, and furniture.
-• No people. No text. Non-interactive.
-
-Output: A single photorealistic 3D render.
-`.trim();
-}
-
-// ----------------------------
-// CLI Input Handler
-// ----------------------------
-input.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-        const cmd = input.value;
-        log("> " + cmd);
-        execute(cmd);
-        input.value = "";
-    }
-});
-
-// Initial message
-log("Room Designer CLI loaded. Type 'help'.");
-
-draw();
-</script>
-
+        
+        function createGlassMaterial() {
+            return new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transmission: 0.9,
+                roughness: 0.1,
+                thickness: 0.01,
+                transparent: true,
+                opacity: 0.8
+            });
+        }
+        
+        function createPlantMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.8,
+                metalness: 0.0
+            });
+        }
+        
+        // Initialize furniture menu
+        function initFurnitureMenu() {
+            furnitureData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'furniture-item';
+                div.innerHTML = `
+                    <div class="furniture-icon">${item.icon}</div>
+                    <div class="furniture-name">${item.name}</div>
+                `;
+                div.addEventListener('click', () => selectFurnitureType(item, div));
+                furnitureScroll.appendChild(div);
+            });
+        }
+        
+        // Initialize color picker
+        function initColorPicker() {
+            colors.forEach((color, index) => {
+                const div = document.createElement('div');
+                div.className = 'color-option';
+                div.style.background = `#${color.value.toString(16).padStart(6, '0')}`;
+                div.addEventListener('click', () => changeSelectedColor(color.value, div));
+                colorPicker.appendChild(div);
+            });
+        }
+        
+        function selectFurnitureType(item, element) {
+            selectedFurnitureType = item;
+            document.querySelectorAll('.furniture-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            deselectFurniture();
+            instructions.textContent = `Tap on floor to place ${item.name}`;
+            instructions.classList.add('active');
+        }
+        
+        function changeSelectedColor(colorValue, element) {
+            if (!selectedFurniture) return;
+            
+            selectedFurniture.traverse(child => {
+                if (child.isMesh && child.material) {
+                    child.material.color.setHex(colorValue);
+                    
+                    // Update material properties based on new color
+                    if (selectedFurniture.userData.furnitureData.wood) {
+                        child.material.roughness = 0.7;
+                        child.material.metalness = 0.2;
+                    } else if (selectedFurniture.userData.furnitureData.fabric) {
+                        child.material.roughness = 0.9;
+                        child.material.metalness = 0.0;
+                    } else if (selectedFurniture.userData.furnitureData.metal) {
+                        child.material.roughness = 0.3;
+                        child.material.metalness = 0.8;
+                    }
+                }
+            });
+            
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        function selectFurniture(furniture) {
+            deselectFurniture();
+            selectedFurniture = furniture;
+            controls.classList.add('active');
+            
+            // Add selection indicator
+            const box = new THREE.Box3().setFromObject(furniture);
+            const size = box.getSize(new THREE.Vector3());
+            const selectionBox = new THREE.Mesh(
+                new THREE.BoxGeometry(size.x + 0.02, size.y + 0.02, size.z + 0.02),
+                new THREE.MeshBasicMaterial({ 
+                    color: 0x00ff00, 
+                    wireframe: true,
+                    opacity: 0.5,
+                    transparent: true
+                })
+            );
+            selectionBox.position.copy(furniture.position);
+            selectionBox.rotation.copy(furniture.rotation);
+            selectionBox.name = 'selectionBox';
+            scene.add(selectionBox);
+            
+            // Highlight selected furniture with a subtle outline
+            furniture.traverse(child => {
+                if (child.isMesh) {
+                    child.material.emissive = new THREE.Color(0x111111);
+                }
+            });
+        }
+        
+        function deselectFurniture() {
+            if (selectedFurniture) {
+                selectedFurniture.traverse(child => {
+                    if (child.isMesh) {
+                        child.material.emissive = new THREE.Color(0x000000);
+                    }
+                });
+            }
+            selectedFurniture = null;
+            controls.classList.remove('active');
+            colorPicker.classList.remove('active');
+            const selectionBox = scene.getObjectByName('selectionBox');
+            if (selectionBox) scene.remove(selectionBox);
+        }
+        
+        function createFurniture(data) {
+            const group = new THREE.Group();
+            
+            switch(data.id) {
+                case 'sofa':
+                    createModernSofa(group, data);
+                    break;
+                case 'armchair':
+                    createArmchair(group, data);
+                    break;
+                case 'dining_table':
+                    createDiningTable(group, data);
+                    break;
+                case 'king_bed':
+                    createKingBed(group, data);
+                    break;
+                case 'office_desk':
+                    createOfficeDesk(group, data);
+                    break;
+                case 'bookshelf':
+                    createBookshelf(group, data);
+                    break;
+                case 'floor_lamp':
+                    createFloorLamp(group, data);
+                    break;
+                case 'fiddle_leaf':
+                    createFiddleLeafPlant(group, data);
+                    break;
+                case 'entertainment_center':
+                    createEntertainmentCenter(group, data);
+                    break;
+                case 'persian_rug':
+                    createPersianRug(group, data);
+                    break;
+                case 'coffee_table':
+                    createCoffeeTable(group, data);
+                    break;
+                case 'dresser':
+                    createDresser(group, data);
+                    break;
+                default:
+                    createBasicFurniture(group, data);
+            }
+            
+            group.userData.furnitureData = data;
+            
+            // Add click detection
+            group.traverse(child => {
+                if (child.isMesh) {
+                    child.userData.selectable = true;
+                    child.userData.parentGroup = group;
+                }
+            });
+            
+            return group;
+        }
+        
+        function createModernSofa(group, data) {
+            const material = createFabricMaterial(data.color);
+            const legMaterial = createMetalMaterial(0x2F4F4F);
+            
+            // Main seat cushion
+            const seat = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.95, data.height * 0.4, data.depth * 0.9),
+                material
+            );
+            seat.position.set(0, data.height * 0.2, 0);
+            group.add(seat);
+            
+            // Back cushion
+            const back = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.95, data.height * 0.6, data.depth * 0.15),
+                material
+            );
+            back.position.set(0, data.height * 0.7, -data.depth * 0.375);
+            group.add(back);
+            
+            // Armrests
+            const armrestGeometry = new THREE.BoxGeometry(data.width * 0.1, data.height * 0.8, data.depth * 0.8);
+            [-1, 1].forEach(side => {
+                const armrest = new THREE.Mesh(armrestGeometry, material);
+                armrest.position.set(side * data.width * 0.425, data.height * 0.4, 0);
+                group.add(armrest);
+            });
+            
+            // Legs
+            const legPositions = [
+                [-data.width/2.5, 0, -data.depth/3],
+                [data.width/2.5, 0, -data.depth/3],
+                [-data.width/2.5, 0, data.depth/3],
+                [data.width/2.5, 0, data.depth/3]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.03, 0.03, data.height * 0.2, 8),
+                    legMaterial
+                );
+                leg.position.set(pos[0], pos[1] + data.height * 0.1, pos[2]);
+                group.add(leg);
+            });
+            
+            // Throw pillows
+            for(let i = 0; i < 3; i++) {
+                const pillow = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.3, 0.15, 0.3),
+                    createFabricMaterial(0xE67E22 + i * 0x111111)
+                );
+                pillow.position.set(
+                    -data.width/4 + (i * data.width/4),
+                    data.height * 0.4,
+                    data.depth * 0.15
+                );
+                pillow.rotation.y = Math.PI/4 * i;
+                group.add(pillow);
+            }
+        }
+        
+        function createArmchair(group, data) {
+            const material = createLeatherMaterial(data.color);
+            const legMaterial = createWoodMaterial(0x4A3728);
+            
+            // Seat
+            const seat = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.4, data.depth),
+                material
+            );
+            seat.position.set(0, data.height * 0.2, 0);
+            group.add(seat);
+            
+            // Back
+            const back = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.8, data.depth * 0.15),
+                material
+            );
+            back.position.set(0, data.height * 0.8, -data.depth * 0.425);
+            group.add(back);
+            
+            // Armrests
+            const armrestGeometry = new THREE.BoxGeometry(data.width * 0.15, data.height * 0.6, data.depth * 0.8);
+            [-1, 1].forEach(side => {
+                const armrest = new THREE.Mesh(armrestGeometry, material);
+                armrest.position.set(side * data.width * 0.425, data.height * 0.3, data.depth * 0.1);
+                group.add(armrest);
+            });
+            
+            // Legs
+            const legGeometry = new THREE.CylinderGeometry(0.04, 0.04, data.height * 0.25, 8);
+            const legPositions = [
+                [-data.width/3, 0, -data.depth/3],
+                [data.width/3, 0, -data.depth/3],
+                [-data.width/3, 0, data.depth/3],
+                [data.width/3, 0, data.depth/3]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                leg.position.set(pos[0], pos[1] + data.height * 0.125, pos[2]);
+                group.add(leg);
+            });
+        }
+        
+        function createDiningTable(group, data) {
+            const tableTopMaterial = createWoodMaterial(data.color);
+            const legMaterial = createWoodMaterial(0x4A3728);
+            
+            // Table top
+            const tableTop = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.1, data.depth),
+                tableTopMaterial
+            );
+            tableTop.position.set(0, data.height, 0);
+            group.add(tableTop);
+            
+            // Legs
+            const legGeometry = new THREE.CylinderGeometry(0.06, 0.08, data.height * 0.9, 8);
+            const legPositions = [
+                [-data.width/3, data.height * 0.45, -data.depth/3],
+                [data.width/3, data.height * 0.45, -data.depth/3],
+                [-data.width/3, data.height * 0.45, data.depth/3],
+                [data.width/3, data.height * 0.45, data.depth/3]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                leg.position.set(pos[0], pos[1], pos[2]);
+                group.add(leg);
+            });
+            
+            // Table stretcher
+            const stretcher = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.7, data.height * 0.08, data.depth * 0.08),
+                legMaterial
+            );
+            stretcher.position.set(0, data.height * 0.2, 0);
+            group.add(stretcher);
+        }
+        
+        function createKingBed(group, data) {
+            const mattressMaterial = createFabricMaterial(data.color);
+            const frameMaterial = createWoodMaterial(0x4A3728);
+            
+            // Mattress
+            const mattress = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.4, data.depth * 0.9),
+                mattressMaterial
+            );
+            mattress.position.set(0, data.height * 0.2, 0);
+            group.add(mattress);
+            
+            // Bed frame
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 1.05, data.height * 0.2, data.depth * 0.95),
+                frameMaterial
+            );
+            frame.position.set(0, 0, 0);
+            group.add(frame);
+            
+            // Headboard
+            const headboard = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.8, data.depth * 0.1),
+                frameMaterial
+            );
+            headboard.position.set(0, data.height * 0.6, -data.depth * 0.425);
+            group.add(headboard);
+            
+            // Pillows
+            for(let i = 0; i < 2; i++) {
+                const pillow = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.6, 0.15, 0.4),
+                    createFabricMaterial(0xF5F5F5)
+                );
+                pillow.position.set(
+                    -data.width/4 + (i * data.width/2),
+                    data.height * 0.4,
+                    data.depth * 0.2
+                );
+                group.add(pillow);
+            }
+            
+            // Nightstands
+            const nightstandMaterial = createWoodMaterial(0x8B7355);
+            [-1, 1].forEach(side => {
+                const nightstand = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.4, data.height * 0.6, 0.4),
+                    nightstandMaterial
+                );
+                nightstand.position.set(side * (data.width/2 + 0.25), data.height * 0.3, -data.depth * 0.3);
+                group.add(nightstand);
+                
+                // Nightstand top
+                const top = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.45, data.height * 0.05, 0.45),
+                    nightstandMaterial
+                );
+                top.position.set(side * (data.width/2 + 0.25), data.height * 0.625, -data.depth * 0.3);
+                group.add(top);
+            });
+        }
+        
+        function createOfficeDesk(group, data) {
+            const desktopMaterial = createWoodMaterial(data.color);
+            const legMaterial = createMetalMaterial(0x2F4F4F);
+            
+            // Desktop
+            const desktop = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.05, data.depth),
+                desktopMaterial
+            );
+            desktop.position.set(0, data.height, 0);
+            group.add(desktop);
+            
+            // Drawers
+            const drawer = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.6, data.height * 0.8, data.depth * 0.7),
+                desktopMaterial
+            );
+            drawer.position.set(0, data.height * 0.4, data.depth * 0.15);
+            group.add(drawer);
+            
+            // Drawer handles
+            const handleMaterial = createMetalMaterial(0x888888);
+            for(let i = 0; i < 3; i++) {
+                const handle = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.15, 0.02, 0.04),
+                    handleMaterial
+                );
+                handle.position.set(
+                    0,
+                    data.height * 0.3 + (i * data.height * 0.25),
+                    data.depth * 0.51
+                );
+                group.add(handle);
+            }
+            
+            // Legs
+            const legPositions = [
+                [-data.width/2.5, data.height * 0.5, -data.depth/2.5],
+                [data.width/2.5, data.height * 0.5, -data.depth/2.5]
+            ];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.04, 0.04, data.height, 8),
+                    legMaterial
+                );
+                leg.position.set(pos[0], pos[1], pos[2]);
+                group.add(leg);
+            });
+        }
+        
+        function createBookshelf(group, data) {
+            const material = createWoodMaterial(data.color);
+            
+            // Main frame
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height, data.depth),
+                material
+            );
+            group.add(frame);
+            
+            // Shelves
+            for(let i = 1; i < 5; i++) {
+                const shelf = new THREE.Mesh(
+                    new THREE.BoxGeometry(data.width * 0.95, data.height * 0.03, data.depth * 0.9),
+                    material
+                );
+                shelf.position.set(0, -data.height/2 + i * (data.height/4.5), 0);
+                group.add(shelf);
+            }
+            
+            // Books
+            const bookColors = [0xDC143C, 0x4169E1, 0x228B22, 0xFFD700, 0x8A2BE2];
+            for(let i = 0; i < 12; i++) {
+                const row = Math.floor(i / 4);
+                const col = i % 4;
+                const book = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.2, 0.02 + Math.random() * 0.05, 0.12),
+                    createFabricMaterial(bookColors[Math.floor(Math.random() * bookColors.length)])
+                );
+                book.position.set(
+                    -data.width/3 + col * 0.22,
+                    -data.height/2.5 + (row + 1) * (data.height/4.5),
+                    data.depth * 0.1
+                );
+                book.rotation.z = (Math.random() - 0.5) * 0.1;
+                group.add(book);
+            }
+        }
+        
+        function createFloorLamp(group, data) {
+            const baseMaterial = createMetalMaterial(0x2F4F4F);
+            const poleMaterial = createMetalMaterial(0x666666);
+            const shadeMaterial = createFabricMaterial(0xF5F5F5);
+            
+            // Base
+            const base = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.15, 0.08, 16),
+                baseMaterial
+            );
+            base.position.set(0, 0.04, 0);
+            group.add(base);
+            
+            // Pole
+            const pole = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.02, 0.02, data.height * 0.9, 8),
+                poleMaterial
+            );
+            pole.position.set(0, data.height * 0.45, 0);
+            group.add(pole);
+            
+            // Shade
+            const shade = new THREE.Mesh(
+                new THREE.ConeGeometry(0.3, 0.4, 16),
+                shadeMaterial
+            );
+            shade.position.set(0, data.height * 0.9, 0);
+            shade.rotation.x = Math.PI;
+            group.add(shade);
+            
+            // Add light
+            const light = new THREE.PointLight(0xFFFFCC, 1.5, 3);
+            light.position.set(0, data.height * 0.85, 0);
+            group.add(light);
+        }
+        
+        function createFiddleLeafPlant(group, data) {
+            const potMaterial = createClayMaterial(0x8B4513);
+            const stemMaterial = createWoodMaterial(0x654321);
+            const leafMaterial = createPlantMaterial(0x228B22);
+            
+            // Pot
+            const pot = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.2, 0.25, 0.3, 16),
+                potMaterial
+            );
+            pot.position.set(0, 0.15, 0);
+            group.add(pot);
+            
+            // Soil
+            const soil = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.18, 0.18, 0.05, 16),
+                createPlantMaterial(0x5D4037)
+            );
+            soil.position.set(0, 0.325, 0);
+            group.add(soil);
+            
+            // Main stem
+            const stem = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.03, 0.04, data.height * 0.7, 8),
+                stemMaterial
+            );
+            stem.position.set(0, 0.5 + data.height * 0.35, 0);
+            group.add(stem);
+            
+            // Leaves
+            for(let i = 0; i < 8; i++) {
+                const leafHeight = 0.7 + (i * 0.15);
+                const leaf = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.2, 8, 8, 0, Math.PI),
+                    leafMaterial
+                );
+                leaf.position.set(
+                    (Math.random() - 0.5) * 0.3,
+                    leafHeight,
+                    (Math.random() - 0.5) * 0.3
+                );
+                leaf.rotation.x = Math.PI/2;
+                leaf.rotation.y = Math.random() * Math.PI * 2;
+                leaf.scale.set(1, 0.6 + Math.random() * 0.4, 0.8);
+                group.add(leaf);
+            }
+        }
+        
+        function createEntertainmentCenter(group, data) {
+            const material = createWoodMaterial(data.color);
+            const shelfMaterial = createWoodMaterial(0x4A3728);
+            
+            // Main unit
+            const mainUnit = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height, data.depth),
+                material
+            );
+            group.add(mainUnit);
+            
+            // Shelves
+            for(let i = 0; i < 3; i++) {
+                const shelf = new THREE.Mesh(
+                    new THREE.BoxGeometry(data.width * 0.9, data.height * 0.03, data.depth * 0.8),
+                    shelfMaterial
+                );
+                shelf.position.set(0, -data.height/3 + i * (data.height/3), data.depth * 0.1);
+                group.add(shelf);
+            }
+            
+            // TV screen
+            const tvScreen = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.7, data.height * 0.5, 0.01),
+                new THREE.MeshStandardMaterial({ 
+                    color: 0x000000,
+                    emissive: 0x111111,
+                    roughness: 0.1,
+                    metalness: 0.9
+                })
+            );
+            tvScreen.position.set(0, data.height * 0.25, data.depth * 0.501);
+            group.add(tvScreen);
+            
+            // Speaker boxes
+            [-1, 1].forEach(side => {
+                const speaker = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.2, 0.3, 0.25),
+                    createMetalMaterial(0x333333)
+                );
+                speaker.position.set(side * (data.width/2.5), 0.15, data.depth * 0.5);
+                group.add(speaker);
+            });
+        }
+        
+        function createPersianRug(group, data) {
+            const rugMaterial = createFabricMaterial(data.color);
+            const patternMaterial = createFabricMaterial(0x2C3E50);
+            
+            // Base rug
+            const rug = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height, data.depth),
+                rugMaterial
+            );
+            rug.position.set(0, data.height/2, 0);
+            group.add(rug);
+            
+            // Border pattern
+            const border = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 0.95, data.height * 1.1, data.depth * 0.1),
+                patternMaterial
+            );
+            border.position.set(0, data.height/2, 0);
+            group.add(border);
+            
+            // Center medallion
+            const medallion = new THREE.Mesh(
+                new THREE.CircleGeometry(0.3, 32),
+                patternMaterial
+            );
+            medallion.rotation.x = -Math.PI/2;
+            medallion.position.set(0, data.height * 1.05, 0);
+            group.add(medallion);
+        }
+        
+        function createCoffeeTable(group, data) {
+            const tableTopMaterial = createGlassMaterial();
+            const legMaterial = createMetalMaterial(0x2F4F4F);
+            
+            // Glass table top
+            const tableTop = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height * 0.05, data.depth),
+                tableTopMaterial
+            );
+            tableTop.position.set(0, data.height, 0);
+            group.add(tableTop);
+            
+            // Modern X-shaped legs
+            const legGeometry = new THREE.BoxGeometry(0.05, data.height * 0.95, 0.05);
+            [-1, 1].forEach(side => {
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                leg.position.set(side * data.width/3, data.height * 0.475, side * data.depth/3);
+                leg.rotation.z = Math.PI/8 * side;
+                group.add(leg);
+            });
+            
+            // Magazine
+            const magazine = new THREE.Mesh(
+                new THREE.BoxGeometry(0.25, 0.001, 0.35),
+                createFabricMaterial(0xDC143C)
+            );
+            magazine.position.set(0.1, data.height * 1.05, 0.1);
+            magazine.rotation.y = Math.PI/6;
+            group.add(magazine);
+        }
+        
+        function createDresser(group, data) {
+            const material = createWoodMaterial(data.color);
+            const drawerMaterial = createWoodMaterial(0x4A3728);
+            const handleMaterial = createMetalMaterial(0x888888);
+            
+            // Main frame
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width, data.height, data.depth),
+                material
+            );
+            group.add(frame);
+            
+            // Drawers (3x2 grid)
+            for(let row = 0; row < 2; row++) {
+                for(let col = 0; col < 3; col++) {
+                    const drawer = new THREE.Mesh(
+                        new THREE.BoxGeometry(data.width/3.2, data.height/2.2, data.depth * 0.8),
+                        drawerMaterial
+                    );
+                    drawer.position.set(
+                        -data.width/3 + col * (data.width/3),
+                        -data.height/4 + row * (data.height/2),
+                        data.depth * 0.1
+                    );
+                    group.add(drawer);
+                    
+                    // Drawer handle
+                    const handle = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.15, 0.02, 0.04),
+                        handleMaterial
+                    );
+                    handle.position.set(
+                        -data.width/3 + col * (data.width/3),
+                        -data.height/4 + row * (data.height/2),
+                        data.depth * 0.51
+                    );
+                    group.add(handle);
+                }
+            }
+            
+            // Top surface
+            const top = new THREE.Mesh(
+                new THREE.BoxGeometry(data.width * 1.02, data.height * 0.05, data.depth * 1.02),
+                material
+            );
+            top.position.set(0, data.height * 0.525, 0);
+            group.add(top);
+        }
+        
+        function createBasicFurniture(group, data) {
+            const material = new THREE.MeshStandardMaterial({ color: data.color });
+            const geometry = new THREE.BoxGeometry(data.width, data.height, data.depth);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.y = data.height / 2;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+        }
+        
+        function createClayMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+        }
+        
+        async function startAR() {
+            try {
+                log('Checking WebXR support...');
+                startBtn.disabled = true;
+                startBtn.textContent = 'Starting...';
+                
+                if (!navigator.xr) {
+                    throw new Error('WebXR not available. Use Chrome/Edge on Android.');
+                }
+                
+                log('Checking AR session support...');
+                const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
+                if (!isSupported) {
+                    throw new Error('AR not supported on this device.');
+                }
+                
+                log('AR supported! Requesting session...');
+                
+                // Request session with minimal requirements first
+                session = await navigator.xr.requestSession('immersive-ar', {
+                    optionalFeatures: ['hit-test', 'dom-overlay', 'local', 'local-floor', 'bounded-floor', 'unbounded'],
+                    domOverlay: { root: document.getElementById('ui-container') }
+                });
+                
+                log('Session created!');
+                
+                // Hide start screen, show UI
+                startScreen.style.display = 'none';
+                topBar.style.display = 'flex';
+                furnitureMenu.classList.add('active');
+                
+                const canvas = document.getElementById('ar-canvas');
+                const gl = canvas.getContext('webgl', { xrCompatible: true });
+                
+                if (!gl) {
+                    throw new Error('Failed to get WebGL context');
+                }
+                
+                log('Setting up Three.js...');
+                
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera();
+                camera.matrixAutoUpdate = false;
+                
+                renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    context: gl,
+                    alpha: true,
+                    preserveDrawingBuffer: true,
+                    antialias: true
+                });
+                
+                renderer.autoClear = false;
+                renderer.xr.enabled = true;
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                log('Setting XR session...');
+                await renderer.xr.setSession(session);
+                
+                // Enhanced lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                directionalLight.position.set(5, 8, 5);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 2048;
+                directionalLight.shadow.mapSize.height = 2048;
+                directionalLight.shadow.camera.near = 0.5;
+                directionalLight.shadow.camera.far = 50;
+                directionalLight.shadow.camera.left = -10;
+                directionalLight.shadow.camera.right = 10;
+                directionalLight.shadow.camera.top = 10;
+                directionalLight.shadow.camera.bottom = -10;
+                scene.add(directionalLight);
+                
+                // Additional fill light
+                const fillLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.3);
+                scene.add(fillLight);
+                
+                // Create reticle
+                reticle = new THREE.Mesh(
+                    new THREE.RingGeometry(0.1, 0.12, 32).rotateX(-Math.PI/2),
+                    new THREE.MeshBasicMaterial({ 
+                        color: 0x00ff00, 
+                        side: THREE.DoubleSide,
+                        opacity: 0.8,
+                        transparent: true
+                    })
+                );
+                reticle.matrixAutoUpdate = false;
+                reticle.visible = false;
+                scene.add(reticle);
+                
+                log('Creating controller...');
+                
+                // Add controller for tap detection
+                controller = renderer.xr.getController(0);
+                controller.addEventListener('select', onSelect);
+                
+                // Add ray for visualization
+                const geometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(0, 0, 0),
+                    new THREE.Vector3(0, 0, -1)
+                ]);
+                const line = new THREE.Line(geometry, 
+                    new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+                );
+                line.scale.z = 5;
+                controller.add(line);
+                
+                scene.add(controller);
+                
+                log('Starting render loop...');
+                statusDiv.textContent = 'Point camera at floor';
+                
+                // Handle session end
+                session.addEventListener('end', onSessionEnd);
+                
+                // Animation loop
+                renderer.setAnimationLoop(render);
+                
+                // Raycasting for furniture selection
+                const raycaster = new THREE.Raycaster();
+                
+                // Handle clicks on furniture
+                controller.addEventListener('selectstart', () => {
+                    if (!selectedFurnitureType) {
+                        // Cast ray to select existing furniture
+                        raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+                        const intersects = raycaster.intersectObjects(scene.children, true);
+                        
+                        for (let intersect of intersects) {
+                            if (intersect.object.userData.selectable && intersect.object.userData.parentGroup) {
+                                selectFurniture(intersect.object.userData.parentGroup);
+                                return;
+                            }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('AR Error:', error);
+                log('ERROR: ' + error.message);
+                alert('Failed to start AR: ' + error.message);
+                startScreen.style.display = 'flex';
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Decorating';
+            }
+        }
+        
+        function render(timestamp, frame) {
+            if (!frame) return;
+            
+            const referenceSpace = renderer.xr.getReferenceSpace();
+            const session = renderer.xr.getSession();
+            
+            // Request hit test source once
+            if (session && !hitTestSourceRequested) {
+                session.requestReferenceSpace('viewer').then((viewerSpace) => {
+                    session.requestHitTestSource({ space: viewerSpace }).then((source) => {
+                        hitTestSource = source;
+                        log('Hit test source created');
+                    }).catch(err => {
+                        log('Hit test not available: ' + err.message);
+                        statusDiv.textContent = 'Hit test unavailable - may not work on this device';
+                    });
+                }).catch(err => {
+                    log('Viewer space error: ' + err.message);
+                });
+                hitTestSourceRequested = true;
+            }
+            
+            // Update reticle position
+            if (hitTestSource) {
+                const hitTestResults = frame.getHitTestResults(hitTestSource);
+                if (hitTestResults.length > 0) {
+                    const hit = hitTestResults[0];
+                    const pose = hit.getPose(referenceSpace);
+                    
+                    if (pose) {
+                        reticle.visible = true;
+                        reticle.matrix.fromArray(pose.transform.matrix);
+                        
+                        // Keep reticle horizontal
+                        reticle.rotation.x = -Math.PI/2;
+                        
+                        statusDiv.textContent = selectedFurnitureType 
+                            ? `Tap to place ${selectedFurnitureType.name}` 
+                            : 'Select furniture below or tap existing furniture';
+                    }
+                } else {
+                    reticle.visible = false;
+                    statusDiv.textContent = 'Point camera at floor';
+                }
+            }
+            
+            // Update camera
+            const pose = frame.getViewerPose(referenceSpace);
+            if (pose) {
+                const view = pose.views[0];
+                camera.matrix.fromArray(view.transform.matrix);
+                camera.updateMatrixWorld(true);
+                camera.projectionMatrix.fromArray(view.projectionMatrix);
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        function onSelect() {
+            if (!reticle.visible && selectedFurnitureType) return;
+            
+            if (selectedFurnitureType) {
+                // Place new furniture
+                const furniture = createFurniture(selectedFurnitureType);
+                furniture.matrix.copy(reticle.matrix);
+                furniture.matrix.decompose(furniture.position, furniture.quaternion, furniture.scale);
+                furniture.matrixAutoUpdate = true;
+                
+                // Adjust position so furniture sits on floor
+                const bbox = new THREE.Box3().setFromObject(furniture);
+                const height = bbox.max.y - bbox.min.y;
+                furniture.position.y += height / 2;
+                
+                scene.add(furniture);
+                placedFurniture.push(furniture);
+                
+                log('Placed: ' + selectedFurnitureType.name);
+                instructions.classList.remove('active');
+            }
+        }
+        
+        function onSessionEnd() {
+            log('Session ended');
+            hitTestSource = null;
+            hitTestSourceRequested = false;
+            session = null;
+            renderer.setAnimationLoop(null);
+            startScreen.style.display = 'flex';
+            topBar.style.display = 'none';
+            furnitureMenu.classList.remove('active');
+            controls.classList.remove('active');
+            placedFurniture = [];
+            selectedFurniture = null;
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Decorating';
+        }
+        
+        // Button handlers
+        rotateBtn.addEventListener('click', () => {
+            if (selectedFurniture) {
+                selectedFurniture.rotation.y += Math.PI / 4;
+                const selectionBox = scene.getObjectByName('selectionBox');
+                if (selectionBox) selectionBox.rotation.y = selectedFurniture.rotation.y;
+            }
+        });
+        
+        colorBtn.addEventListener('click', () => {
+            if (selectedFurniture) {
+                colorPicker.classList.toggle('active');
+            }
+        });
+        
+        deleteBtn.addEventListener('click', () => {
+            if (selectedFurniture) {
+                scene.remove(selectedFurniture);
+                placedFurniture = placedFurniture.filter(f => f !== selectedFurniture);
+                deselectFurniture();
+            }
+        });
+        
+        exitBtn.addEventListener('click', () => {
+            if (session) session.end();
+        });
+        
+        startBtn.addEventListener('click', startAR);
+        
+        // Initialize
+        log('Initializing app...');
+        initFurnitureMenu();
+        initColorPicker();
+        log('Ready!');
+        
+    </script>
 </body>
 </html>
