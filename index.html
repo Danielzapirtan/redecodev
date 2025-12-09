@@ -821,10 +821,10 @@ Room Information:
             }
             
             cliOutput(message, type = 'info') {
-                const log = document.querySelector('log');
+                const log = document.querySelector('.log');
                 const entry = document.createElement('div');
                 entry.className = `log-entry log-${type}`;
-                entry.textContent = message.trim();
+                entry.innerHTML = `${message.trim()}`;
                 log.appendChild(entry);
                 log.scrollTop = log.scrollHeight;
             }
