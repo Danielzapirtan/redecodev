@@ -1,50 +1,44 @@
 {
 	"room_description": {
-		"id": "room_20251209_002",
-		"name": "Bedroom 002",
+		"id": "room_20251210_001",
+		"name": "Bedroom 001",
 		"description": "User's bedroom",
 		"shape": "rectangular",
-		"dimensions": [ 5.0, 4.0, 2.2 ],
+		"dimensions": [ 3.2, 3.1, 2.2 ],
 		"style": "Creative",
 		"items": {
 			{
 				"type": "Door",
-				"align": "west-southwest",
-        "position": "2.0"
+				"align": "west-southwest"
 			},
 			{
-				"type": "Door",
-				"align": "south-southwest",
-        "position": "3.0"
+				"type": "Bookcase",
+				"align": "west-northwest"
 			},
 			{
-				"type": "L-shaped sofa",
-				"align": "creative",
-        "L-shaped sizes": ["2.0", "1.2"]
+				"type": "Wardrobe",
+				"align": "north"
 			},
 			{
-				"type": "TV",
-				"align": "creative"
+				"type": "Bed",
+				"align": "north-northeast"
 			},
 			{
 				"type": "Window",
-				"align": "east",
-        "position": "centered",
-        "total width": "1.0",
-        "nelements": 3
+				"type": "Plants",
+				"align": "east"
 			},
-      {
-        "type": "armchair",
-        "align": "creative",
-        "nitems": "2"
-      },
-      {
-        "type": "bookcase",
-        "align": "creative",
-        "length": "3.0"
-      }
+			{
+				"type": "Desk",
+				"type": "Chair",
+				"align": "south-southeast"
+			},
+			{
+				"type": "Nightstand",
+				"align": "south"
+			}
 		}
 	},
 	"role": "image generator",
-	"task": "Generate a cylindrical panorama of room_20251209_002 ."
+	"task": "generate a cylindric panorama of room_20251210_001."
 }
