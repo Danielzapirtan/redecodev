@@ -1,22 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Living 002 – Interactive Room</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Living 002 — Mobile Gyro + Joystick</title>
 <style>
-  body { margin: 0; overflow: hidden; }
-  #info {
+  html,body { height:100%; margin:0; -webkit-user-select:none; user-select:none; touch-action: none; }
+  canvas { display:block; }
+  #ui {
+    position: absolute; left:0; top:0; right:0; pointer-events:none; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;
+  }
+  #topbar {
+    pointer-events:auto;
+    margin: 10px;
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .panel {
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:14px;
+  }
+  #gyroBtn {
+    pointer-events:auto;
+    background:#0b84ff;
+    border:none;
+    color:white;
+    padding:8px 10px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  #joystick {
     position: absolute;
-    top: 10px; left: 10px;
-    padding: 8px 10px;
-    background: #0007; color: #fff;
-    font-family: sans-serif;
-    border-radius: 4px;
-    z-index: 10;
+    left: 18px;
+    bottom: 24px;
+    width: 120px;
+    height: 120px;
+    pointer-events: auto;
+    touch-action: none;
+  }
+  .stickBase {
+    width:100%;
+    height:100%;
+    background: rgba(0,0,0,0.25);
+    border-radius: 50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .stickThumb {
+    width:44px;
+    height:44px;
+    background: rgba(255,255,255,0.9);
+    border-radius:50%;
+    transform: translate(0,0);
+    will-change: transform;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  #help {
+    margin-left: auto;
+    font-size:12px;
+    opacity:0.9;
+  }
+  /* small screens adjustments */
+  @media (max-width:420px) {
+    #joystick { width: 100px; height:100px; left:12px; bottom:18px; }
+    .stickThumb { width:40px; height:40px; }
   }
 </style>
 
-<!-- Import Map -->
+<!-- import map -->
 <script type="importmap">
 {
   "imports": {
@@ -26,230 +83,329 @@
 }
 </script>
 </head>
-
 <body>
-<div id="info">Click to enter room (WASD + mouse look)</div>
+<div id="ui">
+  <div id="topbar" style="display:flex;">
+    <div class="panel">Living 002 — Tilt phone to look, use joystick to move</div>
+    <button id="gyroBtn" class="panel" style="display:inline-block; margin-left:8px;">Enable Motion</button>
+    <div id="help" class="panel">Tap screen to focus. Swipe to look if gyro unavailable. Desktop: drag + WASD</div>
+  </div>
+</div>
+
+<!-- joystick -->
+<div id="joystick" aria-hidden="true">
+  <div class="stickBase">
+    <div id="thumb" class="stickThumb"></div>
+  </div>
+</div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { DeviceOrientationControls } from 'three/addons/controls/DeviceOrientationControls.js';
 
-// -----------------------------------------------------
-// ROOM PARAMETERS
-// -----------------------------------------------------
+// ---------- Room parameters ----------
 const roomWidth = 5.0;
 const roomDepth = 4.0;
 const roomHeight = 2.2;
 
-// -----------------------------------------------------
-// SCENE + CAMERA
-// -----------------------------------------------------
+// ---------- Three.js setup ----------
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xbfd1df);
 
-const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 50);
-camera.position.set(0, 1.6, 1.5); // human-height camera inside room
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.05, 50);
+camera.position.set(0, 1.6, 1.5); // human eye height inside room
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 document.body.appendChild(renderer.domElement);
 
-// -----------------------------------------------------
-// CONTROLS (Pointer Lock for indoor walking)
-// -----------------------------------------------------
-const controls = new PointerLockControls(camera, document.body);
-
-document.body.addEventListener('click', () => {
-  controls.lock();
-});
-
-// Movement state
-const move = { forward: false, backward: false, left: false, right: false };
-const velocity = new THREE.Vector3();
-
-document.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyW') move.forward = true;
-  if (e.code === 'KeyS') move.backward = true;
-  if (e.code === 'KeyA') move.left = true;
-  if (e.code === 'KeyD') move.right = true;
-});
-
-document.addEventListener('keyup', (e) => {
-  if (e.code === 'KeyW') move.forward = false;
-  if (e.code === 'KeyS') move.backward = false;
-  if (e.code === 'KeyA') move.left = false;
-  if (e.code === 'KeyD') move.right = false;
-});
-
-// -----------------------------------------------------
-// LIGHTS
-// -----------------------------------------------------
-scene.add(new THREE.HemisphereLight(0xffffff, 0x555555, 1.1));
-
-const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-dir.position.set(5, 8, 5);
+// ---------- lights ----------
+scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 1.0));
+const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+dir.position.set(5, 6, 3);
 scene.add(dir);
 
-// -----------------------------------------------------
-// BUILD ROOM (NO CEILING)
-// -----------------------------------------------------
-const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xf0f0f0 });
-const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+// ---------- floor & walls (no ceiling) ----------
+const floorMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
+const wallMat = new THREE.MeshStandardMaterial({ color: 0xf7f7f7 });
 
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(roomWidth, roomDepth),
-  floorMaterial
-);
-floor.rotation.x = -Math.PI / 2;
-floor.position.set(0, 0, 0);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomWidth, roomDepth), floorMat);
+floor.rotation.x = -Math.PI/2;
 scene.add(floor);
 
-// Walls (front, back, left, right)
-function wall(w, h, pos, rotY = 0) {
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(w, h),
-    wallMaterial
-  );
-  mesh.position.set(pos.x, pos.y, pos.z);
-  mesh.rotation.y = rotY;
-  scene.add(mesh);
+function addWall(width, height, pos, rotY = 0) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(width, height), wallMat);
+  m.position.set(pos.x, pos.y, pos.z);
+  m.rotation.y = rotY;
+  scene.add(m);
 }
+addWall(roomWidth, roomHeight, {x:0, y:roomHeight/2, z:-roomDepth/2});            // back
+addWall(roomWidth, roomHeight, {x:0, y:roomHeight/2, z:roomDepth/2}, Math.PI);    // front
+addWall(roomDepth, roomHeight, {x:-roomWidth/2, y:roomHeight/2, z:0}, Math.PI/2); // left
+addWall(roomDepth, roomHeight, {x:roomWidth/2,  y:roomHeight/2, z:0}, -Math.PI/2);// right
 
-wall(roomWidth, roomHeight, { x: 0, y: roomHeight/2, z: -roomDepth/2 });              // back
-wall(roomWidth, roomHeight, { x: 0, y: roomHeight/2, z: roomDepth/2 }, Math.PI);      // front
-wall(roomDepth, roomHeight, { x: -roomWidth/2, y: roomHeight/2, z: 0 }, Math.PI/2);   // left
-wall(roomDepth, roomHeight, { x: roomWidth/2,  y: roomHeight/2, z: 0 }, -Math.PI/2);  // right
-
-// -----------------------------------------------------
-// DOORS (simple rectangular cutouts)
-// (west-southwest, south-southwest → interpret as left wall & front wall)
-// -----------------------------------------------------
-function door(width = 0.9, height = 2.0) {
-  return new THREE.Mesh(
-    new THREE.BoxGeometry(width, height, 0.05),
-    new THREE.MeshStandardMaterial({ color: 0x6b4f2c })
-  );
+// ---------- doors (primitive boxes) ----------
+function createDoor() {
+  return new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.0, 0.05), new THREE.MeshStandardMaterial({color:0x6b4f2c}));
 }
-
-const door1 = door();
+const door1 = createDoor();
 door1.position.set(-roomWidth/2 + 0.05, 1.0, -1.0);
 scene.add(door1);
-
-const door2 = door();
+const door2 = createDoor();
 door2.position.set(0, 1.0, roomDepth/2 - 0.05);
 scene.add(door2);
 
-// -----------------------------------------------------
-// WINDOW (east wall, centered, 1m wide, 3 panels)
-// -----------------------------------------------------
+// ---------- window (east wall, centered, 3 panels) ----------
 const windowGroup = new THREE.Group();
 const totalWidth = 1.0;
 const panels = 3;
 const panelWidth = totalWidth / panels;
-
-for (let i = 0; i < panels; i++) {
-  const frame = new THREE.Mesh(
-    new THREE.PlaneGeometry(panelWidth * 0.95, 1.0),
-    new THREE.MeshStandardMaterial({ color: 0x99bbff, transparent: true, opacity: 0.5 })
-  );
-  frame.position.x = (i - (panels/2 - 0.5)) * panelWidth;
-  windowGroup.add(frame);
+for (let i=0;i<panels;i++){
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(panelWidth*0.95, 1.0),
+    new THREE.MeshStandardMaterial({color:0x99ccff, transparent:true, opacity:0.45}));
+  glass.position.x = (i - (panels/2 - 0.5)) * panelWidth;
+  windowGroup.add(glass);
 }
 windowGroup.position.set(roomWidth/2 - 0.02, 1.2, 0);
 windowGroup.rotation.y = -Math.PI/2;
 scene.add(windowGroup);
 
-// -----------------------------------------------------
-// LOAD FURNITURE MODELS (REAL EXISTING ONES)
-// -----------------------------------------------------
+// ---------- load furniture (real models) ----------
 const loader = new GLTFLoader();
 
-// 1. L-shaped sofa → using "Sofa" model
-loader.load(
-  "https://threejs.org/examples/models/gltf/Sofa/glTF/Sofa.gltf",
-  (gltf) => {
-    const sofa = gltf.scene;
-    sofa.scale.set(1.0, 1.0, 1.0);
-    sofa.position.set(-1.5, 0, 1.2);
-    sofa.rotation.y = Math.PI / 4;
-    scene.add(sofa);
+// helper to set basic scale/pos safely
+function addModel(url, opts = {}) {
+  loader.load(url, (gltf) => {
+    const obj = gltf.scene;
+    if (opts.scale) obj.scale.set(...opts.scale);
+    if (opts.pos) obj.position.set(...opts.pos);
+    if (opts.rotY) obj.rotation.y = opts.rotY;
+    scene.add(obj);
+  }, undefined, (err)=>{ console.warn('model load failed', url, err); });
+}
+
+// 1) L-shaped sofa (Sofa model from three examples) — placed left-back
+addModel("https://threejs.org/examples/models/gltf/Sofa/glTF/Sofa.gltf", {
+  scale: [1.0,1.0,1.0], pos: [-1.5, 0, 1.2], rotY: Math.PI/4
+});
+
+// 2) TV (LittlestTokyo - scaled small) — placed front-right on wall
+addModel("https://threejs.org/examples/models/gltf/LittlestTokyo.glb", {
+  scale: [0.01,0.01,0.01], pos: [1.8, 0, -1.6], rotY: -Math.PI/2
+});
+
+// 3) 2x Armchairs (Chair model) — two copies near sofa
+loader.load("https://threejs.org/examples/models/gltf/Chair/Chair.glb", (gltf)=>{
+  const base = gltf.scene;
+  const c1 = base.clone(); c1.scale.set(1.2,1.2,1.2); c1.position.set(1.0,0,1.3); scene.add(c1);
+  const c2 = base.clone(); c2.scale.set(1.2,1.2,1.2); c2.position.set(0.3,0,1.6); c2.rotation.y = Math.PI/6; scene.add(c2);
+});
+
+// 4) Bookcase — reuse stool stretched (approximate bookcase)
+addModel("https://threejs.org/examples/models/gltf/Stool/glTF/Stool.gltf", {
+  scale: [3.0,2.2,0.4], pos: [-1.5, 0, -1.8]
+});
+
+// ---------- movement state ----------
+let move = { forward:0, right:0 }; // -1..1
+const speed = 1.8; // meters per second
+let lastTime = performance.now();
+
+// ---------- controls: device orientation and fallbacks ----------
+let deviceControls = null;
+let deviceControlsActive = false;
+
+const gyroBtn = document.getElementById('gyroBtn');
+async function enableGyro() {
+  // iOS requires a permission call
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const response = await DeviceMotionEvent.requestPermission();
+      if (response !== 'granted') {
+        alert('Motion permission denied — using swipe look fallback.');
+        return;
+      }
+    } catch (err) {
+      console.warn('Permission request error', err);
+      alert('Could not get motion permission. Using fallback.');
+      return;
+    }
   }
-);
+  deviceControls = new DeviceOrientationControls(camera);
+  deviceControls.connect();
+  deviceControlsActive = true;
+  gyroBtn.style.display = 'none';
+}
+gyroBtn.addEventListener('click', enableGyro);
 
-// 2. TV → using “Littlest Tokyo” components
-loader.load(
-  "https://threejs.org/examples/models/gltf/LittlestTokyo.glb",
-  (gltf) => {
-    const tv = gltf.scene;
-    tv.scale.set(0.01, 0.01, 0.01);
-    tv.position.set(1.8, 0, -1.6);
-    tv.rotation.y = -Math.PI/2;
-    scene.add(tv);
-  }
-);
+// desktop mouse drag look fallback
+let isDragging = false;
+let prevTouch = null;
+const lookSensitivity = 0.0025;
+function onPointerDown(e){
+  // only enable desktop drag if not touching joystick area
+  isDragging = true;
+  prevTouch = getPointerXY(e);
+}
+function onPointerUp(){ isDragging = false; prevTouch = null; }
+function onPointerMove(e){
+  if (!isDragging || deviceControlsActive) return;
+  const pt = getPointerXY(e);
+  if (!prevTouch) { prevTouch = pt; return; }
+  const dx = pt.x - prevTouch.x;
+  const dy = pt.y - prevTouch.y;
+  prevTouch = pt;
+  camera.rotation.y -= dx * lookSensitivity;
+  camera.rotation.x -= dy * lookSensitivity;
+  camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+}
+function getPointerXY(e) {
+  const t = (e.touches && e.touches[0]) || e;
+  return { x: t.clientX, y: t.clientY };
+}
+window.addEventListener('pointerdown', onPointerDown);
+window.addEventListener('pointerup', onPointerUp);
+window.addEventListener('pointermove', onPointerMove, {passive:false});
 
-// 3. Armchairs (2 copies)
-loader.load(
-  "https://threejs.org/examples/models/gltf/Chair/Chair.glb",
-  (gltf) => {
-    const base = gltf.scene;
+// ---------- joystick implementation (touch) ----------
+const joystick = document.getElementById('joystick');
+const thumb = document.getElementById('thumb');
+let joyActive = false;
+let joyId = null;
+const joyRect = joystick.getBoundingClientRect();
+const center = { x: joyRect.left + joyRect.width/2, y: joyRect.top + joyRect.height/2 };
+const maxRadius = joyRect.width * 0.4;
 
-    const c1 = base.clone();
-    c1.scale.set(1.2, 1.2, 1.2);
-    c1.position.set(1.0, 0, 1.3);
-    scene.add(c1);
+function updateCenter() {
+  const r = joystick.getBoundingClientRect();
+  center.x = r.left + r.width/2;
+  center.y = r.top + r.height/2;
+}
+window.addEventListener('resize', updateCenter);
 
-    const c2 = base.clone();
-    c2.scale.set(1.2, 1.2, 1.2);
-    c2.position.set(0.3, 0, 1.6);
-    c2.rotation.y = Math.PI/6;
-    scene.add(c2);
-  }
-);
+function joyStart(e){
+  // only handle first touch on joystick
+  const touch = (e.changedTouches && e.changedTouches[0]) || e;
+  if (joyActive) return;
+  joyActive = true;
+  joyId = touch.identifier !== undefined ? touch.identifier : 'mouse';
+  handleJoyMove(touch);
+}
+function joyMove(e){
+  if (!joyActive) return;
+  // find relevant touch by id
+  let touch = null;
+  if (e.changedTouches) {
+    for (const t of e.changedTouches) {
+      if ((t.identifier !== undefined ? t.identifier : 'mouse') === joyId) { touch = t; break; }
+    }
+    if (!touch) return;
+  } else touch = e;
+  handleJoyMove(touch);
+}
+function joyEnd(e){
+  let touch = (e.changedTouches && e.changedTouches[0]) || e;
+  // if matching id, reset
+  joyActive = false; joyId = null;
+  thumb.style.transform = `translate(0px,0px)`;
+  move.forward = 0; move.right = 0;
+}
+function handleJoyMove(touch){
+  const x = touch.clientX;
+  const y = touch.clientY;
+  const dx = x - center.x;
+  const dy = y - center.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const clamped = Math.min(dist, maxRadius);
+  const nx = dx / (maxRadius || 1);
+  const ny = dy / (maxRadius || 1);
+  // move thumb visually (clamped)
+  const tx = (clamped * Math.cos(Math.atan2(dy,dx)));
+  const ty = (clamped * Math.sin(Math.atan2(dy,dx)));
+  thumb.style.transform = `translate(${tx}px, ${ty}px)`;
+  // set movement (note: up on screen -> negative y -> forward)
+  // forward: -ny (so pushing thumb up (dy negative) yields positive forward)
+  move.forward = -ny;
+  move.right = nx;
+}
 
-// 4. Bookcase → reuse “Stool” model stretched
-loader.load(
-  "https://threejs.org/examples/models/gltf/Stool/glTF/Stool.gltf",
-  (gltf) => {
-    const shelf = gltf.scene;
-    shelf.scale.set(3.0, 2.2, 0.4);
-    shelf.position.set(-1.5, 0, -1.8);
-    scene.add(shelf);
-  }
-);
+// joystick event listeners (touch & mouse)
+joystick.addEventListener('touchstart', (e)=>{ e.preventDefault(); joyStart(e); }, {passive:false});
+joystick.addEventListener('touchmove', (e)=>{ e.preventDefault(); joyMove(e); }, {passive:false});
+joystick.addEventListener('touchend', (e)=>{ e.preventDefault(); joyEnd(e); }, {passive:false});
+joystick.addEventListener('mousedown', (e)=>{ e.preventDefault(); joyStart(e); });
+window.addEventListener('mousemove', (e)=>{ if (joyActive) { e.preventDefault(); joyMove(e); } });
+window.addEventListener('mouseup', (e)=>{ if (joyActive) { e.preventDefault(); joyEnd(e); } });
 
-// -----------------------------------------------------
-// ANIMATION LOOP (with WASD movement)
-// -----------------------------------------------------
+// ---------- keyboard controls for desktop ----------
+const keyMoveScale = 1.0;
+const keys = {};
+window.addEventListener('keydown', (e)=>{ keys[e.code] = true; });
+window.addEventListener('keyup', (e)=>{ keys[e.code] = false; });
+
+// ---------- animation loop ----------
 function animate() {
   requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt = Math.max( (now - lastTime) / 1000, 0.001 );
+  lastTime = now;
 
-  if (controls.isLocked) {
-    const speed = 0.025;
+  // device orientation update (if active)
+  if (deviceControlsActive && deviceControls) deviceControls.update();
 
-    if (move.forward) velocity.z = -speed;
-    else if (move.backward) velocity.z = speed;
-    else velocity.z = 0;
+  // desktop keyboard overrides/additions
+  let kmForward = 0, kmRight = 0;
+  if (keys['KeyW']) kmForward += 1;
+  if (keys['KeyS']) kmForward -= 1;
+  if (keys['KeyD']) kmRight += 1;
+  if (keys['KeyA']) kmRight -= 1;
 
-    if (move.left) velocity.x = -speed;
-    else if (move.right) velocity.x = speed;
-    else velocity.x = 0;
+  // combine joystick and keyboard (keyboard adds)
+  const forwardVal = clamp(move.forward + kmForward * keyMoveScale, -1, 1);
+  const rightVal = clamp(move.right + kmRight * keyMoveScale, -1, 1);
 
-    controls.moveRight(velocity.x);
-    controls.moveForward(velocity.z);
-  }
+  // compute world movement vectors (relative to camera yaw only)
+  const forwardVec = new THREE.Vector3();
+  camera.getWorldDirection(forwardVec);
+  forwardVec.y = 0;
+  forwardVec.normalize();
+
+  const rightVec = new THREE.Vector3();
+  rightVec.crossVectors(forwardVec, camera.up).normalize();
+
+  // apply movement
+  const moveScale = speed * dt;
+  camera.position.addScaledVector(forwardVec, forwardVal * moveScale);
+  camera.position.addScaledVector(rightVec, rightVal * moveScale);
 
   renderer.render(scene, camera);
 }
 animate();
 
-// -----------------------------------------------------
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+// ---------- helpers & resize ----------
 window.addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  updateCenter();
 });
+
+// Prevent the page from scrolling when touching joystick (already mostly handled)
+document.body.addEventListener('touchmove', (e)=>{
+  // if touch in joystick area, prevent default
+  for(const t of e.touches){
+    const rect = joystick.getBoundingClientRect();
+    if (t.clientX >= rect.left && t.clientX <= rect.right && t.clientY >= rect.top && t.clientY <= rect.bottom){
+      e.preventDefault();
+      break;
+    }
+  }
+}, {passive:false});
+
 </script>
 </body>
 </html>
