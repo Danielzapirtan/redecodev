@@ -140,6 +140,9 @@ with gr.Blocks(title="Room Panorama Generator") as demo:
     # Examples
     gr.Examples(
         examples=[
+            ["living room", "modern", "windows with 3 elements and courtain, furniture: L-shaped sofa, 2 armchairs, elegant bookcase, TV", 3, 30],
+            ["bedroom1", "scandinavian", "bed, white furniture (elegant bookcase, wardrobe, desk, chair, nightstand), cozy", 3, 30],
+            ["bedroom2", "scandinavian", " bed, white furniture (elegant bookcase, wardrobe, TV), cozy", 3, 30],
             ["living room", "modern", "floor-to-ceiling windows, marble floor, designer furniture", 3, 30],
             ["bedroom", "scandinavian", "wooden bed, white walls, minimal decor, cozy", 3, 30],
             ["kitchen", "industrial", "exposed brick, stainless steel appliances, concrete countertops", 4, 35],
