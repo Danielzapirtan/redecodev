@@ -27,7 +27,8 @@ def load_model():
     print("Loading model for CPU...")
 
     # Use a smaller model that works better on CPU
-    model_id = "CompVis/stable-diffusion-v1-4"
+    model_id = "runwayml/stable-diffusion-v1-5"
+    #model_id = "CompVis/stable-diffusion-v1-4"
 
     # Explicitly set device to CPU and use float32
     try:
